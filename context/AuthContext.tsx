@@ -68,6 +68,7 @@ import React, {
       try {
         await AsyncStorage.removeItem(STORAGE_KEY);
         setUsername(null);
+        // Note: ProductContext will handle clearing products when username changes
       } catch (error) {
         console.warn('Logout failed', error);
       }

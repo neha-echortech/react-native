@@ -4,12 +4,15 @@ import React, { useContext } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { AuthContext, AuthProvider } from './context/AuthContext';
+import { ProductProvider } from './context/ProductContext';
 import HomeScreen from './screens/HomeScreen';
 import LoginScreen from './screens/LoginScreen';
+import ProductScreen from './screens/ProductScreen';
 
 type RootStackParamList = {
   Login: undefined;
   Home: undefined;
+  Product: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -28,11 +31,28 @@ const RootNavigator: React.FC = () => {
   return (
     <Stack.Navigator>
       {isLoggedIn ? (
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ headerShown: false }}
-        />
+        <>
+          <Stack.Screen
+            name="Home"
+            component={HomeScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Product"
+            component={ProductScreen}
+            options={{ 
+              title: 'Create Product',
+              headerShown: true,
+              headerStyle: {
+                backgroundColor: '#007AFF',
+              },
+              headerTintColor: '#fff',
+              headerTitleStyle: {
+                fontWeight: 'bold',
+              },
+            }}
+          />
+        </>
       ) : (
         <Stack.Screen
           name="Login"
@@ -46,9 +66,11 @@ const RootNavigator: React.FC = () => {
 
 const App: React.FC = () => (
   <AuthProvider>
-    <NavigationContainer>
-      <RootNavigator />
-    </NavigationContainer>
+    <ProductProvider>
+      <NavigationContainer>
+        <RootNavigator />
+      </NavigationContainer>
+    </ProductProvider>
   </AuthProvider>
 );
 
