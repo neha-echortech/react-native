@@ -1,8 +1,7 @@
+import { Redirect } from 'expo-router';
 import React, { useContext } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import HomeScreen from '../screens/HomeScreen';
-import LoginScreen from '../screens/LoginScreen';
 
 export default function Index() {
   const { isLoggedIn, isLoading } = useContext(AuthContext);
@@ -15,7 +14,7 @@ export default function Index() {
     );
   }
 
-  return isLoggedIn ? <HomeScreen /> : <LoginScreen />;
+  return isLoggedIn ? <Redirect href="/home" /> : <Redirect href="/login" />;
 }
 
 const styles = StyleSheet.create({

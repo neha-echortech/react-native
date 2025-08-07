@@ -94,24 +94,7 @@ const CartScreen: React.FC = () => {
   };
 
   const handleCheckout = () => {
-    Alert.alert(
-      'Checkout',
-      `Total: $${getCartTotal().toFixed(2)}\n\nProceed to checkout?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Checkout',
-          onPress: () => {
-            Alert.alert('Success', 'Order placed successfully!');
-            clearCart();
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+    router.push('/checkout');
   };
 
   const renderCartItem = ({ item, index }: { item: CartItem; index: number }) => (
