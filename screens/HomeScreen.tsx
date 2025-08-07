@@ -1,23 +1,20 @@
 import { useRouter } from 'expo-router';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  Modal,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Animated,
+    Modal,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import { Product, ProductContext } from '../context/ProductContext';
-
-const { width, height } = Dimensions.get('window');
 
 const HomeScreen: React.FC = () => {
   const router = useRouter();
@@ -192,46 +189,60 @@ const HomeScreen: React.FC = () => {
     router.push('/cart');
   };
 
-
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
-             <ScrollView 
-         style={styles.scrollView}
-         showsVerticalScrollIndicator={true}
-         contentContainerStyle={styles.scrollContent}
-         bounces={true}
-         alwaysBounceVertical={false}
-       >
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={true}
+        contentContainerStyle={styles.scrollContent}
+        bounces={true}
+        alwaysBounceVertical={false}
+      >
         {/* Header */}
         <View style={styles.header}>
-                  <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.greeting}>Hello, {username ?? 'User'}</Text>
-            <Text style={styles.subtitle}>Manage your products</Text>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.greeting}>Hello, {username ?? 'User'}</Text>
+              <Text style={styles.subtitle}>Manage your products</Text>
+            </View>
+            <View style={styles.headerActions}>
+              <TouchableOpacity 
+                style={styles.cartButton}
+                onPress={handleCartPress}
+              >
+                <Text style={styles.cartButtonText}>
+                  🛒 {getCartItemCount()}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.logoutButton}
+                onPress={handleLogout}
+              >
+                <Text style={styles.logoutButtonText}>
+                  Sign Out
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.cartButton} onPress={handleCartPress}>
-              <Text style={styles.cartButtonText}>🛒 {getCartItemCount()}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutButtonText}>Sign Out</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
           
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{products.length}</Text>
-              <Text style={styles.statLabel}>Total Products</Text>
+              <Text style={styles.statNumber}>
+                {products.length}
+              </Text>
+              <Text style={styles.statLabel}>
+                Total Products
+              </Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>
                 ${products.reduce((sum, product) => sum + product.price, 0).toFixed(2)}
               </Text>
-              <Text style={styles.statLabel}>Total Value</Text>
+              <Text style={styles.statLabel}>
+                Total Value
+              </Text>
             </View>
           </View>
         </View>
@@ -259,7 +270,9 @@ const HomeScreen: React.FC = () => {
                 style={styles.emptyAddButton}
                 onPress={() => setModalVisible(true)}
               >
-                <Text style={styles.emptyAddButtonText}>Add Your First Product</Text>
+                <Text style={styles.emptyAddButtonText}>
+                  Add Your First Product
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -282,11 +295,17 @@ const HomeScreen: React.FC = () => {
                 >
                   <View style={styles.productHeader}>
                     <View style={styles.productInfo}>
-                      <Text style={styles.productName}>{item.name}</Text>
-                      <Text style={styles.productDescription}>{item.description}</Text>
+                      <Text style={styles.productName}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.productDescription}>
+                        {item.description}
+                      </Text>
                     </View>
                     <View style={styles.priceSection}>
-                      <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
+                      <Text style={styles.productPrice}>
+                        ${item.price.toFixed(2)}
+                      </Text>
                     </View>
                   </View>
                   
@@ -298,29 +317,29 @@ const HomeScreen: React.FC = () => {
                         day: 'numeric'
                       })}
                     </Text>
-                            <View style={styles.productActions}>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => handleEditProduct(item)}
-          >
-            <Text style={styles.actionButtonText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.addToCartButton]}
-            onPress={() => handleAddToCart(item)}
-          >
-            <Text style={styles.addToCartButtonText}>Add to Cart</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.deleteButton]}
-            onPress={() => handleDeleteProduct(item)}
-            disabled={isDeleting}
-          >
-            <Text style={styles.deleteButtonText}>
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+                    <View style={styles.productActions}>
+                      <TouchableOpacity 
+                        style={styles.actionButton}
+                        onPress={() => handleEditProduct(item)}
+                      >
+                        <Text style={styles.actionButtonText}>Edit</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.actionButton, styles.addToCartButton]}
+                        onPress={() => handleAddToCart(item)}
+                      >
+                        <Text style={styles.addToCartButtonText}>Add to Cart</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.actionButton, styles.deleteButton]}
+                        onPress={() => handleDeleteProduct(item)}
+                        disabled={isDeleting}
+                      >
+                        <Text style={styles.deleteButtonText}>
+                          {isDeleting ? 'Deleting...' : 'Delete'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </Animated.View>
               ))}
@@ -372,6 +391,7 @@ const HomeScreen: React.FC = () => {
                   onChangeText={setDescription}
                   multiline
                   numberOfLines={4}
+                  textAlignVertical="top"
                 />
               </View>
               
@@ -420,6 +440,8 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+
     </View>
   );
 };
@@ -536,12 +558,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  productList: {
-    paddingBottom: 20,
-  },
   productsContainer: {
     paddingBottom: 20,
-    minHeight: 400,
   },
   productCard: {
     backgroundColor: '#FFFFFF',
@@ -767,6 +785,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
+
 });
 
 export default HomeScreen;

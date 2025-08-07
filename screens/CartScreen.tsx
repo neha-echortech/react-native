@@ -131,11 +131,18 @@ const CartScreen: React.FC = () => {
     >
       <View style={styles.cartItemHeader}>
         <View style={styles.cartItemInfo}>
-          <Text style={styles.cartItemName}>{item.product.name}</Text>
-          <Text style={styles.cartItemDescription}>{item.product.description}</Text>
+          <Text style={styles.cartItemName}>
+            {item.product.name}
+          </Text>
+          <Text style={styles.cartItemDescription}>
+            {item.product.description}
+          </Text>
+
         </View>
         <View style={styles.cartItemPrice}>
-          <Text style={styles.cartItemPriceText}>${item.product.price.toFixed(2)}</Text>
+          <Text style={styles.cartItemPriceText}>
+            ${item.product.price.toFixed(2)}
+          </Text>
         </View>
       </View>
       
@@ -147,7 +154,9 @@ const CartScreen: React.FC = () => {
           >
             <Text style={styles.quantityButtonText}>-</Text>
           </TouchableOpacity>
-          <Text style={styles.quantityText}>{item.quantity}</Text>
+          <Text style={styles.quantityText}>
+            {item.quantity}
+          </Text>
           <TouchableOpacity 
             style={styles.quantityButton}
             onPress={() => updateQuantity(item.product.id, item.quantity + 1)}
@@ -186,7 +195,10 @@ const CartScreen: React.FC = () => {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
-              <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={() => router.back()}
+              >
                 <Text style={styles.backButtonText}>← Back</Text>
               </TouchableOpacity>
               <View>
@@ -195,7 +207,10 @@ const CartScreen: React.FC = () => {
               </View>
             </View>
             {cartItems.length > 0 && (
-              <TouchableOpacity style={styles.clearButton} onPress={handleClearCart}>
+              <TouchableOpacity 
+                style={styles.clearButton}
+                onPress={handleClearCart}
+              >
                 <Text style={styles.clearButtonText}>Clear All</Text>
               </TouchableOpacity>
             )}
@@ -228,10 +243,17 @@ const CartScreen: React.FC = () => {
       {cartItems.length > 0 && (
         <View style={styles.checkoutFooter}>
           <View style={styles.checkoutInfo}>
-            <Text style={styles.checkoutTotal}>Total: ${getCartTotal().toFixed(2)}</Text>
-            <Text style={styles.checkoutItems}>{getCartItemCount()} items</Text>
+            <Text style={styles.checkoutTotal}>
+              Total: ${getCartTotal().toFixed(2)}
+            </Text>
+            <Text style={styles.checkoutItems}>
+              {getCartItemCount()} items
+            </Text>
           </View>
-          <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
+          <TouchableOpacity 
+            style={styles.checkoutButton}
+            onPress={handleCheckout}
+          >
             <Text style={styles.checkoutButtonText}>Checkout</Text>
           </TouchableOpacity>
         </View>
@@ -348,6 +370,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     lineHeight: 20,
   },
+
   cartItemPrice: {
     alignItems: 'flex-end',
   },

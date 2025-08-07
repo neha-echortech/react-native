@@ -1,11 +1,10 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
     Alert,
     Animated,
-    Dimensions,
-    FlatList,
+    Image,
+    Platform,
+    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
@@ -14,289 +13,283 @@ import {
     View
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import { Product, ProductContext } from '../context/ProductContext';
-
-const { width, height } = Dimensions.get('window');
+import { ProductContext } from '../context/ProductContext';
 
 const ProductScreen: React.FC = () => {
   const { username } = useContext(AuthContext);
-  const { products, isLoading, createProduct, loadUserProducts } = useContext(ProductContext);
+  const { createProduct, isLoading } = useContext(ProductContext);
   
-  const [name, setName] = useState('');
+  const [category, setCategory] = useState('Everyday Electronics');
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [fadeAnim] = useState(new Animated.Value(0));
+  const [quantity, setQuantity] = useState(1);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (username) {
-      loadUserProducts(username);
-    }
-    
+  React.useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 800,
+      duration: 600,
       useNativeDriver: true,
     }).start();
-  }, [username, loadUserProducts]);
+  }, []);
 
-  const handleCreateProduct = async () => {
-    if (!name.trim() || !description.trim() || !price.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+  const categories = [
+    'Everyday Electronics',
+    'Fashion & Accessories',
+    'Home & Garden',
+    'Sports & Outdoors',
+    'Books & Media',
+    'Toys & Games',
+    'Health & Beauty',
+    'Automotive',
+    'Other'
+  ];
+
+  const handleAddPhoto = () => {
+    if (photos.length >= 8) {
+      Alert.alert('Maximum Photos', 'You can only upload up to 8 photos.');
       return;
     }
+    // Simulate photo upload - in real app, this would open camera/gallery
+    const newPhoto = `https://picsum.photos/300/300?random=${Date.now()}`;
+    setPhotos([...photos, newPhoto]);
+  };
 
-    const priceValue = parseFloat(price);
-    if (isNaN(priceValue) || priceValue <= 0) {
-      Alert.alert('Error', 'Please enter a valid price');
-      return;
-    }
+  const handleRemovePhoto = (index: number) => {
+    const newPhotos = photos.filter((_, i) => i !== index);
+    setPhotos(newPhotos);
+  };
 
-    setIsCreating(true);
-    try {
-      await createProduct(name.trim(), description.trim(), priceValue, username!);
-      setName('');
-      setDescription('');
-      setPrice('');
-      setShowForm(false);
-      Alert.alert('Success', 'Product created successfully!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create product');
-    } finally {
-      setIsCreating(false);
+  const handleQuantityChange = (increment: boolean) => {
+    if (increment) {
+      setQuantity(prev => Math.min(prev + 1, 999));
+    } else {
+      setQuantity(prev => Math.max(prev - 1, 1));
     }
   };
 
-  const renderProduct = ({ item, index }: { item: Product; index: number }) => (
-    <Animated.View 
-      style={[
-        styles.productCard,
-        {
-          opacity: fadeAnim,
-          transform: [{
-            translateY: fadeAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [50, 0],
-            })
-          }]
-        }
-      ]}
-    >
-      <LinearGradient
-        colors={['#ffffff', '#f8f9ff']}
-        style={styles.productCardGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.productHeader}>
-          <View style={styles.productNameContainer}>
-            <Text style={styles.productName}>{item.name}</Text>
-            <View style={styles.productBadge}>
-              <Text style={styles.productBadgeText}>#{index + 1}</Text>
-            </View>
-          </View>
-          <View style={styles.priceContainer}>
-            <Text style={styles.priceLabel}>Price</Text>
-            <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
-          </View>
-        </View>
-        
-        <Text style={styles.productDescription}>{item.description}</Text>
-        
-        <View style={styles.productFooter}>
-          <View style={styles.dateContainer}>
-            <Text style={styles.dateIcon}>📅</Text>
-            <Text style={styles.productDate}>
-              {new Date(item.createdAt).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              })}
-            </Text>
-          </View>
-          <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.deleteButton}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </LinearGradient>
-    </Animated.View>
-  );
+  const handleNext = () => {
+    if (currentStep < 5) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      handleSubmit();
+    }
+  };
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.loadingGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <ActivityIndicator size="large" color="white" />
-          <Text style={styles.loadingText}>Loading your products...</Text>
-        </LinearGradient>
-      </View>
-    );
-  }
+
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !description.trim()) {
+      Alert.alert('Error', 'Please fill in all required fields.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await createProduct(title.trim(), description.trim(), parseFloat(category === 'Everyday Electronics' ? '29.99' : '19.99'), username!);
+      Alert.alert('Success', 'Product created successfully!');
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setQuantity(1);
+      setPhotos([]);
+      setCurrentStep(1);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to create product');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getProgressPercentage = () => {
+    return (currentStep / 5) * 100;
+  };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#667eea" />
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
-      {/* Header with Gradient */}
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.header}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.headerContent}>
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>Product Management</Text>
-            <Text style={styles.headerSubtitle}>
-              {products.length} product{products.length !== 1 ? 's' : ''} in your catalog
-            </Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Text style={styles.time}>9:41</Text>
+          <View style={styles.statusIcons}>
+            <View style={styles.signalBars}>
+              <View style={styles.bar} />
+              <View style={styles.bar} />
+              <View style={styles.bar} />
+              <View style={styles.bar} />
+            </View>
+            <View style={styles.wifiIcon}>
+              <View style={styles.wifiArc} />
+            </View>
+            <View style={styles.batteryIcon}>
+              <View style={styles.batteryBody} />
+              <View style={styles.batteryLevel} />
+            </View>
           </View>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setShowForm(!showForm)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.addButtonText}>{showForm ? '✕' : '+'}</Text>
-          </TouchableOpacity>
         </View>
-      </LinearGradient>
+        
+        <View style={styles.navigationBar}>
+          <TouchableOpacity style={styles.backButton}>
+            <Text style={styles.backArrow}>‹</Text>
+            </TouchableOpacity>
+          <Text style={styles.screenTitle}>Add Products</Text>
+          <TouchableOpacity style={styles.closeButton}>
+            <Text style={styles.closeIcon}>×</Text>
+            </TouchableOpacity>
+        </View>
+      </View>
 
-      {/* Create Product Form */}
-      {showForm && (
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         <Animated.View 
           style={[
-            styles.formContainer,
+            styles.content,
             {
               opacity: fadeAnim,
               transform: [{
                 translateY: fadeAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [-20, 0],
+                  outputRange: [20, 0],
                 })
               }]
             }
           ]}
         >
-          <LinearGradient
-            colors={['#f8f9ff', '#ffffff']}
-            style={styles.formGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Text style={styles.formTitle}>Create New Product</Text>
+          {/* Create a Product Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Create a Product</Text>
+            <Text style={styles.sectionDescription}>
+              Detailed product listings show up better in searches. More visibility means more buyers.
+            </Text>
             
+            {/* Photo Upload Area */}
+            <View style={styles.photoSection}>
+              <View style={styles.photoGrid}>
+                {photos.map((photo, index) => (
+                  <View key={index} style={styles.photoItem}>
+                    <Image source={{ uri: photo }} style={styles.uploadedPhoto} />
+                    <TouchableOpacity 
+                      style={styles.removePhotoButton}
+                      onPress={() => handleRemovePhoto(index)}
+                    >
+                      <Text style={styles.removePhotoIcon}>×</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                
+                {photos.length < 8 && (
+                  <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddPhoto}>
+                    <Text style={styles.cameraIcon}>📷</Text>
+                    <Text style={styles.addPhotoText}>Add Photos</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text style={styles.photoCount}>Photos: {photos.length}/8</Text>
+            </View>
+          </View>
+
+          {/* Product Details Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Product Details</Text>
+            
+            {/* Category Field */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Product Name</Text>
+              <Text style={styles.inputLabel}>Category*</Text>
+              <TouchableOpacity style={styles.categorySelector}>
+                <Text style={styles.categoryText}>{category}</Text>
+                <Text style={styles.chevronIcon}>⌄</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Title Field */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Title*</Text>
               <TextInput
-                style={styles.input}
-                placeholder="Enter product name"
-                placeholderTextColor="#999"
-                value={name}
-                onChangeText={setName}
+                style={styles.textInput}
+                placeholder="Enter product title"
+                placeholderTextColor="#9CA3AF"
+                value={title}
+                onChangeText={setTitle}
               />
             </View>
             
+            {/* Description Field */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Description</Text>
+              <Text style={styles.inputLabel}>Description*</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Describe your product"
-                placeholderTextColor="#999"
+                style={[styles.textInput, styles.textArea]}
+                placeholder="Describe your product in detail..."
+                placeholderTextColor="#9CA3AF"
                 value={description}
                 onChangeText={setDescription}
                 multiline
                 numberOfLines={4}
+                textAlignVertical="top"
               />
             </View>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Price ($)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0.00"
-                placeholderTextColor="#999"
-                value={price}
-                onChangeText={(text) => {
-                  if (text.length > price.length) {
-                    const newChar = text[text.length - 1];
-                    if (!/[0-9.]/.test(newChar)) return;
-                    if (newChar === '.' && price.includes('.')) return;
-                    const decimalIndex = price.indexOf('.');
-                    if (decimalIndex !== -1 && text.length > decimalIndex + 3) return;
-                    if (text.length > 10) return;
-                  }
-                  setPrice(text);
-                }}
-                keyboardType="numeric"
-                maxLength={10}
-              />
-            </View>
-            
-            <View style={styles.formButtons}>
-              <TouchableOpacity
-                style={styles.cancelFormButton}
-                onPress={() => setShowForm(false)}
-              >
-                <Text style={styles.cancelFormButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.submitFormButton}
-                onPress={handleCreateProduct}
-                disabled={isCreating}
-              >
-                <LinearGradient
-                  colors={isCreating ? ['#ccc', '#ccc'] : ['#667eea', '#764ba2']}
-                  style={styles.submitFormButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Text style={styles.submitFormButtonText}>
-                    {isCreating ? 'Creating...' : 'Create Product'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
-        </Animated.View>
-      )}
-
-      {/* Products List */}
-      <View style={styles.productsContainer}>
-        {products.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📦</Text>
-            <Text style={styles.emptyTitle}>No Products Yet</Text>
-            <Text style={styles.emptyText}>
-              Start building your product catalog by creating your first product
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyCreateButton}
-              onPress={() => setShowForm(true)}
-            >
-              <Text style={styles.emptyCreateButtonText}>Create Your First Product</Text>
-            </TouchableOpacity>
           </View>
-        ) : (
-          <FlatList
-            data={products}
-            renderItem={renderProduct}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.productList}
-          />
-        )}
+
+
+
+          {/* Quantity Available Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quantity Available</Text>
+            <View style={styles.quantitySelector}>
+              <TouchableOpacity 
+                style={styles.quantityButton}
+                onPress={() => handleQuantityChange(false)}
+              >
+                <Text style={styles.quantityButtonText}>-</Text>
+              </TouchableOpacity>
+              <View style={styles.quantityDisplay}>
+                <Text style={styles.quantityText}>{quantity}</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.quantityButton}
+                onPress={() => handleQuantityChange(true)}
+              >
+                <Text style={styles.quantityButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Animated.View>
+      </ScrollView>
+
+      {/* Progress and Navigation */}
+      <View style={styles.footer}>
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View 
+              style={[
+                styles.progressFill, 
+                { width: `${getProgressPercentage()}%` }
+              ]} 
+            />
+          </View>
+          <Text style={styles.progressText}>{currentStep} of 5</Text>
+        </View>
+        
+        <TouchableOpacity 
+          style={styles.nextButton}
+          onPress={handleNext}
+          disabled={isSubmitting}
+        >
+          <Text style={styles.nextButtonText}>
+            {isSubmitting ? 'Creating...' : currentStep === 5 ? 'Create Product' : 'Next'}
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      
     </View>
   );
 };
@@ -304,288 +297,315 @@ const ProductScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9ff',
+    backgroundColor: '#FFFFFF',
   },
-  loadingContainer: {
-    flex: 1,
+  header: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  loadingGradient: {
-    flex: 1,
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  time: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  statusIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  signalBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 1,
+  },
+  bar: {
+    width: 3,
+    backgroundColor: '#111827',
+    borderRadius: 1,
+  },
+  wifiIcon: {
+    width: 16,
+    height: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    color: 'white',
-    fontSize: 16,
-    marginTop: 20,
-    fontWeight: '500',
+  wifiArc: {
+    width: 12,
+      height: 8,
+    borderWidth: 1.5,
+    borderColor: '#111827',
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    borderBottomWidth: 0,
   },
-  header: {
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+  batteryIcon: {
+    width: 20,
+    height: 10,
+    borderWidth: 1,
+    borderColor: '#111827',
+    borderRadius: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  headerContent: {
+  batteryBody: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#111827',
+    margin: 1,
+    borderRadius: 1,
+  },
+  batteryLevel: {
+    width: 2,
+    height: 4,
+    backgroundColor: '#111827',
+    marginRight: 1,
+    borderRadius: 1,
+  },
+  navigationBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  headerTextContainer: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 5,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
-  },
-  addButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  backButton: {
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  addButtonText: {
+  backArrow: {
     fontSize: 24,
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#111827',
+    fontWeight: '600',
   },
-  formContainer: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#667eea',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
+  screenTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
   },
-  formGradient: {
-    padding: 25,
+  closeButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  formTitle: {
+  closeIcon: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2d3748',
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+
+  sectionDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
     marginBottom: 20,
-    textAlign: 'center',
+  },
+  photoSection: {
+    marginBottom: 8,
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 12,
+  },
+  photoItem: {
+    position: 'relative',
+  },
+  uploadedPhoto: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  removePhotoButton: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removePhotoIcon: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  addPhotoButton: {
+    width: 80,
+    height: 80,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  cameraIcon: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  addPhotoText: {
+    fontSize: 10,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  photoCount: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   inputGroup: {
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#2d3748',
+    color: '#374151',
     marginBottom: 8,
   },
-  input: {
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    padding: 15,
+  categorySelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  categoryText: {
     fontSize: 16,
-    backgroundColor: '#f7fafc',
-    color: '#2d3748',
+    color: '#111827',
+  },
+  chevronIcon: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  textInput: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    fontSize: 16,
+    color: '#111827',
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
-  formButtons: {
+  quantitySelector: {
     flexDirection: 'row',
-    gap: 15,
-    marginTop: 10,
-  },
-  cancelFormButton: {
-    flex: 1,
-    backgroundColor: '#f7fafc',
-    paddingVertical: 15,
-    borderRadius: 12,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
+    gap: 16,
   },
-  cancelFormButtonText: {
-    color: '#718096',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  submitFormButton: {
-    flex: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  submitFormButtonGradient: {
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  submitFormButtonText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  productsContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  productList: {
-    paddingBottom: 20,
-  },
-  productCard: {
-    marginBottom: 15,
+  quantityButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#F3F4F6',
     borderRadius: 20,
-    shadowColor: '#667eea',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  productCardGradient: {
-    borderRadius: 20,
-    padding: 20,
-  },
-  productHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  productNameContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  productName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2d3748',
-    marginRight: 10,
-  },
-  productBadge: {
-    backgroundColor: '#667eea',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  productBadgeText: {
-    fontSize: 10,
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  priceContainer: {
-    alignItems: 'flex-end',
-  },
-  priceLabel: {
-    fontSize: 10,
-    color: '#718096',
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  productPrice: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#667eea',
-  },
-  productDescription: {
-    fontSize: 14,
-    color: '#4a5568',
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  productFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dateIcon: {
-    fontSize: 14,
-    marginRight: 5,
-  },
-  productDate: {
-    fontSize: 12,
-    color: '#718096',
-    fontWeight: '500',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  editButton: {
-    backgroundColor: '#667eea',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  editButtonText: {
-    fontSize: 12,
-    color: 'white',
-    fontWeight: '600',
-  },
-  deleteButton: {
-    backgroundColor: '#e53e3e',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  deleteButtonText: {
-    fontSize: 12,
-    color: 'white',
-    fontWeight: '600',
-  },
-  emptyState: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
-  emptyEmoji: {
-    fontSize: 60,
-    marginBottom: 20,
+  quantityButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
   },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2d3748',
-    marginBottom: 10,
-    textAlign: 'center',
+  quantityDisplay: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    minWidth: 60,
+    alignItems: 'center',
   },
-  emptyText: {
+  quantityText: {
     fontSize: 16,
-    color: '#718096',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 30,
+    fontWeight: '600',
+    color: '#111827',
   },
-  emptyCreateButton: {
-    backgroundColor: '#667eea',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
+
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
-  emptyCreateButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  progressContainer: {
+    marginBottom: 16,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#F59E0B',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  nextButton: {
+    backgroundColor: '#F59E0B',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  nextButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '600',
   },
 });
 

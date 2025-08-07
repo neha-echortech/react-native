@@ -2,6 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useContext } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import 'react-native-reanimated/lib/reanimated2/js-reanimated';
 
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';

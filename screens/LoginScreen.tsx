@@ -1,44 +1,23 @@
 import React, { useContext, useState } from 'react';
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-
-const { width, height } = Dimensions.get('window');
 
 const LoginScreen: React.FC = () => {
   const { login } = useContext(AuthContext);
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [slideAnim] = useState(new Animated.Value(30));
-
-  React.useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
 
   const handleLogin = async () => {
     if (!username.trim() || !password) {
@@ -67,68 +46,58 @@ const LoginScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View 
-            style={[
-              styles.content,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }]
-              }
-            ]}
-          >
-            {/* Header Section */}
-            <View style={styles.headerSection}>
-              <Text style={styles.logo}>📱</Text>
-              <Text style={styles.title}>Welcome Back</Text>
-              <Text style={styles.subtitle}>
-                Sign in to access your product dashboard
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            <Text style={styles.logo}>📱</Text>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>
+              Sign in to access your product dashboard
+            </Text>
+          </View>
+
+          {/* Login Form */}
+          <View style={styles.formContainer}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Username</Text>
+              <TextInput
+                placeholder="Enter your username"
+                placeholderTextColor="#9CA3AF"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                style={styles.input}
+                editable={!isSubmitting}
+                testID="username-input"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <TextInput
+                placeholder="Enter your password"
+                placeholderTextColor="#9CA3AF"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                style={styles.input}
+                editable={!isSubmitting}
+                testID="password-input"
+              />
+            </View>
+
+            {/* Login Button */}
+            <TouchableOpacity
+              style={styles.loginButton}
+              onPress={handleLogin}
+              disabled={isSubmitting}
+              activeOpacity={0.8}
+              testID="login-button"
+            >
+              <Text style={styles.loginButtonText}>
+                {isSubmitting ? 'Signing In...' : 'Sign In'}
               </Text>
-            </View>
-
-            {/* Login Form */}
-            <View style={styles.formContainer}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Username</Text>
-                <TextInput
-                  placeholder="Enter your username"
-                  placeholderTextColor="#9CA3AF"
-                  value={username}
-                  onChangeText={setUsername}
-                  autoCapitalize="none"
-                  style={styles.input}
-                  editable={!isSubmitting}
-                  testID="username-input"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Password</Text>
-                <TextInput
-                  placeholder="Enter your password"
-                  placeholderTextColor="#9CA3AF"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  style={styles.input}
-                  editable={!isSubmitting}
-                  testID="password-input"
-                />
-              </View>
-
-              {/* Login Button */}
-              <TouchableOpacity
-                style={styles.loginButton}
-                onPress={handleLogin}
-                disabled={isSubmitting}
-                activeOpacity={0.8}
-                testID="login-button"
-              >
-                <Text style={styles.loginButtonText}>
-                  {isSubmitting ? 'Signing In...' : 'Sign In'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -148,9 +117,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     paddingVertical: 40,
-  },
-  content: {
-    alignItems: 'center',
   },
   headerSection: {
     alignItems: 'center',
