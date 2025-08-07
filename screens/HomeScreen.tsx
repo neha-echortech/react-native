@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -13,13 +14,16 @@ import {
   View
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
+import { CartContext } from '../context/CartContext';
 import { Product, ProductContext } from '../context/ProductContext';
 
 const { width, height } = Dimensions.get('window');
 
 const HomeScreen: React.FC = () => {
+  const router = useRouter();
   const { username, logout } = useContext(AuthContext);
   const { products, isLoading, createProduct, updateProduct, deleteProduct, loadUserProducts, clearProducts } = useContext(ProductContext);
+  const { addToCart, getCartItemCount, refreshCartItems } = useContext(CartContext);
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -117,6 +121,10 @@ const HomeScreen: React.FC = () => {
     setIsEditing(true);
     try {
       await updateProduct(editingProduct.id, name.trim(), description.trim(), priceValue);
+      
+      // Refresh cart items with updated product data
+      await refreshCartItems();
+      
       setEditingProduct(null);
       setName('');
       setDescription('');
@@ -146,6 +154,10 @@ const HomeScreen: React.FC = () => {
             setIsDeleting(true);
             try {
               await deleteProduct(product.id);
+              
+              // Refresh cart items after deletion (product will be removed from cart automatically)
+              await refreshCartItems();
+              
               Alert.alert('Success', 'Product deleted successfully!');
             } catch (error) {
               Alert.alert('Error', 'Failed to delete product');
@@ -167,6 +179,19 @@ const HomeScreen: React.FC = () => {
     setPrice('');
   };
 
+  const handleAddToCart = async (product: Product) => {
+    try {
+      await addToCart(product);
+      Alert.alert('Success', 'Product added to cart!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add product to cart');
+    }
+  };
+
+  const handleCartPress = () => {
+    router.push('/cart');
+  };
+
 
 
   return (
@@ -182,15 +207,20 @@ const HomeScreen: React.FC = () => {
        >
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.greeting}>Hello, {username ?? 'User'}</Text>
-              <Text style={styles.subtitle}>Manage your products</Text>
-            </View>
+                  <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.greeting}>Hello, {username ?? 'User'}</Text>
+            <Text style={styles.subtitle}>Manage your products</Text>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.cartButton} onPress={handleCartPress}>
+              <Text style={styles.cartButtonText}>🛒 {getCartItemCount()}</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
               <Text style={styles.logoutButtonText}>Sign Out</Text>
             </TouchableOpacity>
           </View>
+        </View>
           
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
@@ -268,23 +298,29 @@ const HomeScreen: React.FC = () => {
                         day: 'numeric'
                       })}
                     </Text>
-                    <View style={styles.productActions}>
-                      <TouchableOpacity 
-                        style={styles.actionButton}
-                        onPress={() => handleEditProduct(item)}
-                      >
-                        <Text style={styles.actionButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.actionButton, styles.deleteButton]}
-                        onPress={() => handleDeleteProduct(item)}
-                        disabled={isDeleting}
-                      >
-                        <Text style={styles.deleteButtonText}>
-                          {isDeleting ? 'Deleting...' : 'Delete'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                            <View style={styles.productActions}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => handleEditProduct(item)}
+          >
+            <Text style={styles.actionButtonText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.addToCartButton]}
+            onPress={() => handleAddToCart(item)}
+          >
+            <Text style={styles.addToCartButtonText}>Add to Cart</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.deleteButton]}
+            onPress={() => handleDeleteProduct(item)}
+            disabled={isDeleting}
+          >
+            <Text style={styles.deleteButtonText}>
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Text>
+          </TouchableOpacity>
+        </View>
                   </View>
                 </Animated.View>
               ))}
@@ -424,6 +460,22 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '500',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  cartButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  cartButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   logoutButton: {
     backgroundColor: '#F3F4F6',
     paddingHorizontal: 16,
@@ -559,6 +611,14 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 12,
     color: '#374151',
+    fontWeight: '600',
+  },
+  addToCartButton: {
+    backgroundColor: '#10B981',
+  },
+  addToCartButtonText: {
+    fontSize: 12,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   deleteButton: {

@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { AuthProvider } from '../context/AuthContext';
+import { CartProvider } from '../context/CartContext';
 import { ProductProvider } from '../context/ProductContext';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -22,27 +23,30 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ProductProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="home" options={{ headerShown: false }} />
-            <Stack.Screen 
-              name="product" 
-              options={{ 
-                title: 'Create Product',
-                headerShown: true,
-                headerStyle: {
-                  backgroundColor: '#007AFF',
-                },
-                headerTintColor: '#fff',
-                headerTitleStyle: {
-                  fontWeight: 'bold',
-                },
-              }} 
-            />
-          </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
+        <CartProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="home" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="product" 
+                options={{ 
+                  title: 'Create Product',
+                  headerShown: true,
+                  headerStyle: {
+                    backgroundColor: '#007AFF',
+                  },
+                  headerTintColor: '#fff',
+                  headerTitleStyle: {
+                    fontWeight: 'bold',
+                  },
+                }} 
+              />
+              <Stack.Screen name="cart" options={{ headerShown: false }} />
+            </Stack>
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </CartProvider>
       </ProductProvider>
     </AuthProvider>
   );

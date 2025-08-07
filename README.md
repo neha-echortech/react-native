@@ -1,94 +1,87 @@
-# Username Login App
+🚀 Features & App Flow
+This React Native application includes the following core functionalities for a simple product ordering system:
 
-A React Native app with user authentication and product management features.
+🔐 1. User Authentication
+Login Screen: Secure login for existing users.
 
-## Features
+Users must log in before accessing any product-related features.
 
-### Authentication
-- User login with username and password
-- Persistent login state using AsyncStorage
-- Secure logout functionality
+📦 2. Product Management
+🛠️ Create Product
+Add new products by entering:
 
-### Product Management
-- **User-specific products**: Each user can only see their own products
-- **Create Product**: Add new products with name, description, and price
-- **Product List**: View all products created by the logged-in user
-- **Data Persistence**: Products are stored locally and persist between app sessions
-- **User Isolation**: When a user logs out and another user logs in, only the new user's products are displayed
+Product Name
 
-## How It Works
+Description
 
-### User Authentication
-1. Users enter their username and password on the login screen
-2. Upon successful login, the user is redirected to the home screen
-3. Login state is persisted using AsyncStorage
-4. Users can logout, which clears their session and returns them to the login screen
+Price
 
-### Product Management
-1. **Home Screen**: Displays a welcome message and shows all products created by the current user
-2. **Create Product Button**: Located in the top-right corner of the home screen
-3. **Product Screen**: 
-   - Form to create new products (name, description, price)
-   - List of all products created by the current user
-   - Real-time updates when products are created
-4. **User Isolation**: 
-   - Products are tied to specific users via userId
-   - When switching users, only that user's products are displayed
-   - Previous user's products are completely hidden from other users
+Products are stored and listed dynamically.
 
-## Technical Implementation
+📋 Product List
+Displays all products with:
 
-### Context Providers
-- **AuthContext**: Manages user authentication state
-- **ProductContext**: Manages user-specific product data
+Name
 
-### Data Storage
-- Uses AsyncStorage for persistent data storage
-- Products are stored with userId association for user isolation
-- Automatic cleanup when users logout
+Description
 
-### Navigation
-- Stack navigation between Login, Home, and Product screens
-- Automatic navigation based on authentication state
+Price
 
-## Getting Started
+Each product includes Edit and Delete options.
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+✏️ Edit Product
+Update details of an existing product from the list.
 
-2. Start the development server:
-   ```bash
-   npm start
-   ```
+🗑️ Delete Product
+Remove a product from the system.
 
-3. Run on your preferred platform:
-   ```bash
-   npm run android
-   # or
-   npm run ios
-   # or
-   npm run web
-   ```
+🛒 3. Purchase Flow
+🛍️ Buy Product
+Users can browse the product list and select items to purchase.
 
-## Usage
+Products are added to the Cart.
 
-1. **Login**: Enter any username and password to login
-2. **View Products**: See your products on the home screen
-3. **Create Product**: Tap "Create Product" button to add new products
-4. **Logout**: Use the logout button to switch users
-5. **User Switching**: Login with different usernames to see user-specific products
+💳 Checkout
+Displays selected products in a cart view.
 
-## File Structure
+Users can:
 
-```
-├── context/
-│   ├── AuthContext.tsx      # User authentication management
-│   └── ProductContext.tsx   # Product data management
-├── screens/
-│   ├── LoginScreen.tsx      # Login interface
-│   ├── HomeScreen.tsx       # Main dashboard with products
-│   └── ProductScreen.tsx    # Product creation and management
-└── App.tsx                  # Main app with navigation setup
-```
+Review product details
+
+See total cost
+
+Remove items if needed
+
+Finalize purchase by confirming the order.
+
+📦 Order Summary
+After checkout, a summary screen shows:
+
+Purchased products
+
+Quantity
+
+Total price
+
+Purchase time/date
+
+📈 Order Status
+Tracks the status of each placed order.
+
+Example statuses: Pending, Processing, Shipped, Delivered
+
+✅ Complete Flow Overview
+
+
+Edit
+Login
+   ↓
+Create Product → Product List → (Edit/Delete Products)
+   ↓
+Buy Product
+   ↓
+Checkout (Review Cart & Confirm Purchase)
+   ↓
+Order Summary
+   ↓
+Order Status

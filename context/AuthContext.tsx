@@ -48,6 +48,7 @@ import React, {
         }
       };
       restore();
+      
     }, []);
   
     const login = useCallback(async (user: string, password: string) => {
