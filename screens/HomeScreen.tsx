@@ -69,7 +69,16 @@ const HomeScreen: React.FC = () => {
           text: 'Sign Out',
           style: 'destructive',
           onPress: async () => {
-            await logout();
+            try {
+              console.log('Logging out...');
+              await logout();
+              console.log('Logout successful');
+              // Force navigation to login screen
+              router.replace('/login');
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
           },
         },
       ],

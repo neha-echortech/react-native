@@ -242,20 +242,6 @@ const CheckoutScreen: React.FC = () => {
           <View style={styles.payButtonDivider} />
           <Text style={styles.payButtonTotal}>${total.toFixed(2)}</Text>
         </TouchableOpacity>
-        
-        <View style={styles.footer}>
-          <View style={styles.footerLeft}>
-            <View style={styles.shopIcon}>
-              <Text style={styles.shopIconText}>🛍️</Text>
-            </View>
-            <Text style={styles.footerText}>Shop</Text>
-          </View>
-          <View style={styles.footerRight}>
-            <Text style={styles.footerText}>curated by</Text>
-            <Text style={styles.brandLogo}>MM</Text>
-            <Text style={styles.footerText}>YourApp</Text>
-          </View>
-        </View>
       </View>
     </View>
   );
@@ -495,45 +481,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-  },
-  footer: {
-    backgroundColor: '#374151',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  footerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  shopIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    backgroundColor: '#8B5CF6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  shopIconText: {
-    fontSize: 10,
-    color: '#FFFFFF',
-  },
-  footerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  footerText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-  },
-  brandLogo: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
   },
 });
 

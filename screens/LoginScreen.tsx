@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import React, { useContext, useState } from 'react';
 import {
     Alert,
@@ -14,20 +15,29 @@ import {
 import { AuthContext } from '../context/AuthContext';
 
 const LoginScreen: React.FC = () => {
+  const router = useRouter();
   const { login } = useContext(AuthContext);
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleLogin = async () => {
+    console.log('Login attempt with:', { username: username.trim(), password: password ? '***' : 'empty' });
+    
     if (!username.trim() || !password) {
       Alert.alert('Error', 'Please enter both username and password.');
       return;
     }
+    
     setIsSubmitting(true);
     try {
+      console.log('Calling login function...');
       await login(username.trim(), password);
+      console.log('Login successful!');
+      // Force navigation to home screen
+      router.replace('/home');
     } catch (e: any) {
+      console.error('Login error:', e);
       Alert.alert('Login failed', e.message || 'Unknown error');
     } finally {
       setIsSubmitting(false);
@@ -48,7 +58,6 @@ const LoginScreen: React.FC = () => {
         >
           {/* Header Section */}
           <View style={styles.headerSection}>
-            <Text style={styles.logo}>📱</Text>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>
               Sign in to access your product dashboard
@@ -115,16 +124,14 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 40,
   },
   headerSection: {
     alignItems: 'center',
     marginBottom: 48,
-  },
-  logo: {
-    fontSize: 48,
-    marginBottom: 24,
+    width: '100%',
   },
   title: {
     fontSize: 28,
@@ -142,15 +149,18 @@ const styles = StyleSheet.create({
   formContainer: {
     width: '100%',
     maxWidth: 320,
+    alignItems: 'center',
   },
   inputGroup: {
     marginBottom: 20,
+    width: '100%',
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
+    textAlign: 'left',
   },
   input: {
     backgroundColor: '#F9FAFB',
@@ -161,6 +171,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    width: '100%',
   },
   loginButton: {
     backgroundColor: '#3B82F6',
@@ -168,6 +179,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
+    width: '100%',
     shadowColor: '#3B82F6',
     shadowOffset: {
       width: 0,
