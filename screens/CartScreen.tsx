@@ -131,9 +131,25 @@ const CartScreen: React.FC = () => {
           )}
         </View>
         <View style={styles.cartItemPrice}>
-          <Text style={styles.cartItemPriceText}>
-            ${item.product.price.toFixed(2)}
-          </Text>
+          {item.product.discountPercentage ? (
+            <View style={styles.discountedPriceContainer}>
+              <Text style={styles.originalPrice}>
+                ${item.product.originalPrice?.toFixed(2)}
+              </Text>
+              <Text style={styles.cartItemPriceText}>
+                ${item.product.price.toFixed(2)}
+              </Text>
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountBadgeText}>
+                  -{item.product.discountPercentage}%
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.cartItemPriceText}>
+              ${item.product.price.toFixed(2)}
+            </Text>
+          )}
         </View>
       </View>
       
@@ -376,6 +392,28 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#059669',
+  },
+  discountedPriceContainer: {
+    alignItems: 'flex-end',
+  },
+  originalPrice: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+    marginBottom: 2,
+  },
+  discountBadge: {
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 2,
+  },
+  discountBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#DC2626',
   },
   cartItemFooter: {
     flexDirection: 'row',

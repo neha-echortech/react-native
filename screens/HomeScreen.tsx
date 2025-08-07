@@ -25,6 +25,7 @@ const HomeScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [discountPercentage, setDiscountPercentage] = useState(''); // Discount percentage
   const [isCreating, setIsCreating] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -98,12 +99,20 @@ const HomeScreen: React.FC = () => {
       return;
     }
 
+    // Validate discount percentage
+    const discountValue = discountPercentage.trim() ? parseFloat(discountPercentage) : 0;
+    if (discountPercentage.trim() && (isNaN(discountValue) || discountValue < 0 || discountValue > 100)) {
+      Alert.alert('Error', 'Please enter a valid discount percentage (0-100)');
+      return;
+    }
+
     setIsCreating(true);
     try {
-      await createProduct(name.trim(), description.trim(), priceValue, username!, productVariations);
+      await createProduct(name.trim(), description.trim(), priceValue, username!, productVariations, discountValue > 0 ? discountValue : undefined);
       setName('');
       setDescription('');
       setPrice('');
+      setDiscountPercentage('');
       setProductVariations([]);
       setModalVisible(false);
       Alert.alert('Success', 'Product created successfully!');
@@ -128,9 +137,16 @@ const HomeScreen: React.FC = () => {
       return;
     }
 
+    // Validate discount percentage
+    const discountValue = discountPercentage.trim() ? parseFloat(discountPercentage) : 0;
+    if (discountPercentage.trim() && (isNaN(discountValue) || discountValue < 0 || discountValue > 100)) {
+      Alert.alert('Error', 'Please enter a valid discount percentage (0-100)');
+      return;
+    }
+
     setIsEditing(true);
     try {
-      await updateProduct(editingProduct.id, name.trim(), description.trim(), priceValue, productVariations);
+      await updateProduct(editingProduct.id, name.trim(), description.trim(), priceValue, productVariations, discountValue > 0 ? discountValue : undefined);
       
       // Refresh cart items with updated product data
       await refreshCartItems();
@@ -139,6 +155,7 @@ const HomeScreen: React.FC = () => {
       setName('');
       setDescription('');
       setPrice('');
+      setDiscountPercentage('');
       setProductVariations([]);
       setModalVisible(false);
       Alert.alert('Success', 'Product updated successfully!');
@@ -188,6 +205,7 @@ const HomeScreen: React.FC = () => {
     setName('');
     setDescription('');
     setPrice('');
+    setDiscountPercentage('');
     setProductVariations([]);
     setShowVariationForm(false);
     setVariationName('');
@@ -278,7 +296,8 @@ const HomeScreen: React.FC = () => {
     setEditingProduct(product);
     setName(product.name);
     setDescription(product.description);
-    setPrice(product.price.toString());
+    setPrice(product.originalPrice ? product.originalPrice.toString() : product.price.toString());
+    setDiscountPercentage(product.discountPercentage ? product.discountPercentage.toString() : '');
     setProductVariations(product.variations || []);
     setModalVisible(true);
   };
@@ -397,9 +416,25 @@ const HomeScreen: React.FC = () => {
                       </Text>
                     </View>
                     <View style={styles.priceSection}>
-                      <Text style={styles.productPrice}>
-                        ${item.price.toFixed(2)}
-                      </Text>
+                      {item.discountPercentage ? (
+                        <View style={styles.discountedPriceContainer}>
+                          <Text style={styles.originalPrice}>
+                            ${item.originalPrice?.toFixed(2)}
+                          </Text>
+                          <Text style={styles.productPrice}>
+                            ${item.price.toFixed(2)}
+                          </Text>
+                          <View style={styles.discountBadge}>
+                            <Text style={styles.discountBadgeText}>
+                              -{item.discountPercentage}%
+                            </Text>
+                          </View>
+                        </View>
+                      ) : (
+                        <Text style={styles.productPrice}>
+                          ${item.price.toFixed(2)}
+                        </Text>
+                      )}
                     </View>
                   </View>
                   
@@ -512,7 +547,35 @@ const HomeScreen: React.FC = () => {
                   maxLength={10}
                 />
               </View>
-
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Discount Percentage (%)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="0"
+                  placeholderTextColor="#9CA3AF"
+                  value={discountPercentage}
+                  onChangeText={(text) => {
+                    if (text.length > discountPercentage.length) {
+                      const newChar = text[text.length - 1];
+                      if (!/[0-9.]/.test(newChar)) return;
+                      if (newChar === '.' && discountPercentage.includes('.')) return;
+                      const decimalIndex = discountPercentage.indexOf('.');
+                      if (decimalIndex !== -1 && text.length > decimalIndex + 1) return;
+                      if (text.length > 5) return;
+                    }
+                    setDiscountPercentage(text);
+                  }}
+                  keyboardType="numeric"
+                  maxLength={5}
+                />
+                {discountPercentage.trim() && (
+                  <Text style={styles.discountPreview}>
+                    Final Price: ${((parseFloat(price) || 0) * (1 - (parseFloat(discountPercentage) || 0) / 100)).toFixed(2)}
+                  </Text>
+                )}
+              </View>
+              
               {/* Variations Section */}
               <View style={styles.inputGroup}>
                 <View style={styles.variationHeader}>
@@ -866,6 +929,34 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#059669',
+  },
+  discountedPriceContainer: {
+    alignItems: 'flex-end',
+  },
+  originalPrice: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+    marginBottom: 2,
+  },
+  discountBadge: {
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 2,
+  },
+  discountBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#DC2626',
+  },
+  discountPreview: {
+    fontSize: 12,
+    color: '#059669',
+    fontWeight: '500',
+    marginTop: 4,
   },
   productFooter: {
     flexDirection: 'row',

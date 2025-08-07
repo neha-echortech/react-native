@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import {
     Alert,
     Animated,
@@ -7,7 +7,6 @@ import {
     StatusBar,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
@@ -19,16 +18,21 @@ const CheckoutScreen: React.FC = () => {
   const { username } = useContext(AuthContext);
   const { cartItems, getCartTotal, clearCart } = useContext(CartContext);
   
-  const [discountCode, setDiscountCode] = useState('');
-  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
-  const [appliedDiscount, setAppliedDiscount] = useState(0);
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Calculate costs
   const subtotal = getCartTotal();
+  
+  // Calculate original subtotal (before product discounts)
+  const originalSubtotal = cartItems.reduce((total, item) => {
+    const originalPrice = item.product.originalPrice || item.product.price;
+    return total + (originalPrice * item.quantity);
+  }, 0);
+  
   const shipping = cartItems.length > 0 ? 6.95 : 0;
   const estimatedTaxes = subtotal * 0.094; // 9.4% tax rate
-  const total = subtotal + shipping + estimatedTaxes - appliedDiscount;
+  const total = subtotal + shipping + estimatedTaxes;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -38,24 +42,7 @@ const CheckoutScreen: React.FC = () => {
     }).start();
   }, []);
 
-  const handleApplyDiscount = async () => {
-    if (!discountCode.trim()) {
-      Alert.alert('Error', 'Please enter a discount code');
-      return;
-    }
 
-    setIsApplyingDiscount(true);
-    // Simulate API call
-    setTimeout(() => {
-      if (discountCode.toLowerCase() === 'save10') {
-        setAppliedDiscount(subtotal * 0.1); // 10% discount
-        Alert.alert('Success', 'Discount code applied! 10% off your order.');
-      } else {
-        Alert.alert('Error', 'Invalid discount code');
-      }
-      setIsApplyingDiscount(false);
-    }, 1000);
-  };
 
   const handlePayNow = () => {
     Alert.alert(
@@ -97,7 +84,27 @@ const CheckoutScreen: React.FC = () => {
         )}
         <Text style={styles.productQuantity}>Qty: {item.quantity}</Text>
       </View>
-      <Text style={styles.productPrice}>${(item.product.price * item.quantity).toFixed(2)}</Text>
+      <View style={styles.priceContainer}>
+        {item.product.discountPercentage ? (
+          <View style={styles.discountedPriceContainer}>
+            <Text style={styles.originalPrice}>
+              ${(item.product.originalPrice! * item.quantity).toFixed(2)}
+            </Text>
+            <Text style={styles.productPrice}>
+              ${(item.product.price * item.quantity).toFixed(2)}
+            </Text>
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountBadgeText}>
+                -{item.product.discountPercentage}%
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <Text style={styles.productPrice}>
+            ${(item.product.price * item.quantity).toFixed(2)}
+          </Text>
+        )}
+      </View>
     </View>
   );
 
@@ -143,93 +150,41 @@ const CheckoutScreen: React.FC = () => {
             {cartItems.map(renderCartItem)}
           </View>
 
-          {/* Discount Code */}
-          <View style={styles.discountContainer}>
-            <TextInput
-              style={styles.discountInput}
-              placeholder="Discount code or gift card"
-              placeholderTextColor="#9CA3AF"
-              value={discountCode}
-              onChangeText={setDiscountCode}
-            />
-            <TouchableOpacity
-              style={styles.applyButton}
-              onPress={handleApplyDiscount}
-              disabled={isApplyingDiscount}
-            >
-              <Text style={styles.applyButtonText}>
-                {isApplyingDiscount ? 'Applying...' : 'Apply'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+
 
           {/* Cost Breakdown */}
           <View style={styles.costBreakdown}>
             <View style={styles.costRow}>
-              <Text style={styles.costLabel}>Subtotal</Text>
-              <Text style={styles.costValue}>${subtotal.toFixed(2)}</Text>
+              <Text style={styles.costLabel}>Item(s) total</Text>
+              <Text style={styles.costValue}>${originalSubtotal.toFixed(2)}</Text>
             </View>
             
-            <View style={styles.costRow}>
-              <View style={styles.costLabelContainer}>
-                <Text style={styles.costLabel}>Shipping</Text>
-                <TouchableOpacity>
-                  <Text style={styles.helpIcon}>?</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.costValue}>${shipping.toFixed(2)}</Text>
-            </View>
-            
-            <View style={styles.costRow}>
-              <View style={styles.costLabelContainer}>
-                <Text style={styles.costLabel}>Estimated taxes</Text>
-                <TouchableOpacity>
-                  <Text style={styles.helpIcon}>?</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.costValue}>${estimatedTaxes.toFixed(2)}</Text>
-            </View>
-
-            {appliedDiscount > 0 && (
+            {(originalSubtotal > subtotal) && (
               <View style={styles.costRow}>
-                <Text style={styles.costLabel}>Discount</Text>
-                <Text style={[styles.costValue, styles.discountValue]}>-${appliedDiscount.toFixed(2)}</Text>
+                <Text style={styles.costLabel}>Shop discount</Text>
+                <Text style={[styles.costValue, styles.discountValue]}>-${(originalSubtotal - subtotal).toFixed(2)}</Text>
               </View>
             )}
+            
+            <View style={styles.costRow}>
+              <Text style={styles.costLabel}>Delivery total</Text>
+              <Text style={styles.costValue}>{shipping > 0 ? `$${shipping.toFixed(2)}` : 'Free'}</Text>
+            </View>
+            
+
+            
+            <View style={styles.orderTotalSeparator} />
+            
+            <View style={styles.orderTotalRow}>
+              <Text style={styles.orderTotalLabel}>
+                Order total ({cartItems.reduce((count, item) => count + item.quantity, 0)} item{cartItems.reduce((count, item) => count + item.quantity, 0) !== 1 ? 's' : ''}):
+              </Text>
+              <Text style={styles.orderTotalValue}>${total.toFixed(2)}</Text>
+            </View>
           </View>
         </Animated.View>
 
-        {/* Upsell Section */}
-        <Animated.View 
-          style={[
-            styles.section,
-            {
-              opacity: fadeAnim,
-              transform: [{
-                translateY: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [30, 0],
-                })
-              }]
-            }
-          ]}
-        >
-          <Text style={styles.sectionTitle}>Just one more thing</Text>
-          
-          <View style={styles.upsellCard}>
-            <View style={styles.upsellImage}>
-              <Text style={styles.upsellImageText}>🧴</Text>
-            </View>
-            <View style={styles.upsellInfo}>
-              <Text style={styles.upsellName}>Premium Product</Text>
-              <Text style={styles.upsellSize}>Large (4.2 oz)</Text>
-              <Text style={styles.upsellPrice}>$32.00</Text>
-            </View>
-            <TouchableOpacity style={styles.upsellButton}>
-              <Text style={styles.upsellButtonText}>Add</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+
       </ScrollView>
 
       {/* Payment Footer */}
@@ -344,33 +299,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
   },
-  discountContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
+  priceContainer: {
+    alignItems: 'flex-end',
   },
-  discountInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    backgroundColor: '#FFFFFF',
-    color: '#111827',
+  discountedPriceContainer: {
+    alignItems: 'flex-end',
   },
-  applyButton: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    justifyContent: 'center',
+  originalPrice: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+    marginBottom: 2,
   },
-  applyButtonText: {
-    color: '#6B7280',
-    fontSize: 14,
+  discountBadge: {
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+    marginTop: 2,
+  },
+  discountBadgeText: {
+    fontSize: 8,
     fontWeight: '600',
+    color: '#DC2626',
   },
+
   costBreakdown: {
     gap: 12,
   },
@@ -393,63 +347,41 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontWeight: '500',
   },
+  discountedSubtotalContainer: {
+    alignItems: 'flex-end',
+  },
+  originalSubtotal: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+    marginBottom: 2,
+  },
   discountValue: {
     color: '#059669',
+  },
+  orderTotalSeparator: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 12,
+  },
+  orderTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  orderTotalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  orderTotalValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
   },
   helpIcon: {
     fontSize: 12,
     color: '#6B7280',
-    fontWeight: '600',
-  },
-  upsellCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#F9FAFB',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  upsellImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  upsellImageText: {
-    fontSize: 20,
-  },
-  upsellInfo: {
-    flex: 1,
-  },
-  upsellName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  upsellSize: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  upsellPrice: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '600',
-  },
-  upsellButton: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  upsellButtonText: {
-    color: '#374151',
-    fontSize: 12,
     fontWeight: '600',
   },
   paymentFooter: {

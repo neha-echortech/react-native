@@ -24,6 +24,7 @@ const ProductScreen: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [discountPercentage, setDiscountPercentage] = useState(''); // Discount percentage
   const [photos, setPhotos] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,13 +117,21 @@ const ProductScreen: React.FC = () => {
       return;
     }
 
+    // Validate discount percentage
+    const discountValue = discountPercentage.trim() ? parseFloat(discountPercentage) : 0;
+    if (discountPercentage.trim() && (isNaN(discountValue) || discountValue < 0 || discountValue > 100)) {
+      Alert.alert('Error', 'Please enter a valid discount percentage (0-100)');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await createProduct(title.trim(), description.trim(), parseFloat(category === 'Everyday Electronics' ? '29.99' : '19.99'), username!, variations);
+      await createProduct(title.trim(), description.trim(), parseFloat(category === 'Everyday Electronics' ? '29.99' : '19.99'), username!, variations, discountValue > 0 ? discountValue : undefined);
       Alert.alert('Success', 'Product created successfully!');
       // Reset form
       setTitle('');
       setDescription('');
+      setDiscountPercentage('');
       setQuantity(1);
       setPhotos([]);
       setVariations([]);
@@ -265,6 +274,37 @@ const ProductScreen: React.FC = () => {
                 textAlignVertical="top"
               />
             </View>
+            
+            {/* Discount Field */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Discount Percentage (%)</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="0"
+                placeholderTextColor="#9CA3AF"
+                value={discountPercentage}
+                onChangeText={(text) => {
+                  if (text.length > discountPercentage.length) {
+                    const newChar = text[text.length - 1];
+                    if (!/[0-9.]/.test(newChar)) return;
+                    if (newChar === '.' && discountPercentage.includes('.')) return;
+                    const decimalIndex = discountPercentage.indexOf('.');
+                    if (decimalIndex !== -1 && text.length > decimalIndex + 1) return;
+                    if (text.length > 5) return;
+                  }
+                  setDiscountPercentage(text);
+                }}
+                keyboardType="numeric"
+                maxLength={5}
+              />
+              {discountPercentage.trim() && (
+                <Text style={styles.discountPreview}>
+                  Final Price: ${((parseFloat(category === 'Everyday Electronics' ? '29.99' : '19.99') || 0) * (1 - (parseFloat(discountPercentage) || 0) / 100)).toFixed(2)}
+                </Text>
+              )}
+            </View>
+            
+
           </View>
 
           {/* Variations Section */}
@@ -371,7 +411,7 @@ const ProductScreen: React.FC = () => {
               <Text style={styles.modalTitle}>Add Variation</Text>
               <TouchableOpacity
                 onPress={() => setShowVariationModal(false)}
-                style={styles.closeButton}
+                style={styles.modalCloseButton}
               >
                 <Text style={styles.closeButtonText}>×</Text>
               </TouchableOpacity>
@@ -790,7 +830,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
   },
-  closeButton: {
+  modalCloseButton: {
     width: 24,
     height: 24,
     justifyContent: 'center',
@@ -874,6 +914,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  discountPreview: {
+    fontSize: 12,
+    color: '#059669',
+    fontWeight: '500',
+    marginTop: 4,
+  },
+
 });
 
 export default ProductScreen; 

@@ -16,6 +16,8 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  discountPercentage?: number; // Discount percentage (0-100)
+  originalPrice?: number; // Original price before discount
   variations?: ProductVariation[];
   createdAt: string;
   userId: string;
@@ -24,8 +26,8 @@ export interface Product {
 interface ProductContextType {
   products: Product[];
   isLoading: boolean;
-  createProduct: (name: string, description: string, price: number, userId: string, variations?: ProductVariation[]) => Promise<void>;
-  updateProduct: (id: string, name: string, description: string, price: number, variations?: ProductVariation[]) => Promise<void>;
+  createProduct: (name: string, description: string, price: number, userId: string, variations?: ProductVariation[], discountPercentage?: number) => Promise<void>;
+  updateProduct: (id: string, name: string, description: string, price: number, variations?: ProductVariation[], discountPercentage?: number) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   loadUserProducts: (userId: string) => Promise<void>;
   clearProducts: () => Promise<void>;
@@ -74,13 +76,20 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   }, []);
 
-  const createProduct = useCallback(async (name: string, description: string, price: number, userId: string, variations?: ProductVariation[]) => {
+  const createProduct = useCallback(async (name: string, description: string, price: number, userId: string, variations?: ProductVariation[], discountPercentage?: number) => {
     try {
+      // Calculate final price based on discount
+      const finalPrice = discountPercentage && discountPercentage > 0 
+        ? price * (1 - discountPercentage / 100)
+        : price;
+      
       const newProduct: Product = {
         id: Date.now().toString(),
         name,
         description,
-        price,
+        price: finalPrice,
+        originalPrice: discountPercentage && discountPercentage > 0 ? price : undefined,
+        discountPercentage: discountPercentage && discountPercentage > 0 ? discountPercentage : undefined,
         variations,
         createdAt: new Date().toISOString(),
         userId,
@@ -103,8 +112,13 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   }, []);
 
-  const updateProduct = useCallback(async (id: string, name: string, description: string, price: number, variations?: ProductVariation[]) => {
+  const updateProduct = useCallback(async (id: string, name: string, description: string, price: number, variations?: ProductVariation[], discountPercentage?: number) => {
     try {
+      // Calculate final price based on discount
+      const finalPrice = discountPercentage && discountPercentage > 0 
+        ? price * (1 - discountPercentage / 100)
+        : price;
+      
       // Get existing products
       const stored = await AsyncStorage.getItem(PRODUCTS_STORAGE_KEY);
       const allProducts: Product[] = stored ? JSON.parse(stored) : [];
@@ -112,7 +126,15 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       // Find and update the product
       const updatedProducts = allProducts.map(product => 
         product.id === id 
-          ? { ...product, name, description, price, variations }
+          ? { 
+              ...product, 
+              name, 
+              description, 
+              price: finalPrice,
+              originalPrice: discountPercentage && discountPercentage > 0 ? price : undefined,
+              discountPercentage: discountPercentage && discountPercentage > 0 ? discountPercentage : undefined,
+              variations 
+            }
           : product
       );
       
