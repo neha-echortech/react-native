@@ -137,7 +137,15 @@ const CartScreen: React.FC = () => {
           <Text style={styles.cartItemDescription}>
             {item.product.description}
           </Text>
-
+          {item.selectedVariations && Object.keys(item.selectedVariations).length > 0 && (
+            <View style={styles.variationsContainer}>
+              {Object.entries(item.selectedVariations).map(([variationName, option], index) => (
+                <Text key={index} style={styles.variationText}>
+                  {variationName}: {option}
+                </Text>
+              ))}
+            </View>
+          )}
         </View>
         <View style={styles.cartItemPrice}>
           <Text style={styles.cartItemPriceText}>
@@ -370,7 +378,14 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     lineHeight: 20,
   },
-
+  variationsContainer: {
+    marginTop: 4,
+  },
+  variationText: {
+    fontSize: 12,
+    color: '#059669',
+    fontWeight: '500',
+  },
   cartItemPrice: {
     alignItems: 'flex-end',
   },

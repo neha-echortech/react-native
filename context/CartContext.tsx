@@ -10,12 +10,13 @@ import { Product } from './ProductContext';
 export interface CartItem {
   product: Product;
   quantity: number;
+  selectedVariations?: {[key: string]: string};
 }
 
 interface CartContextType {
   cartItems: CartItem[];
   isLoading: boolean;
-  addToCart: (product: Product) => Promise<void>;
+  addToCart: (product: Product, selectedVariations?: {[key: string]: string}) => Promise<void>;
   removeFromCart: (productId: string) => Promise<void>;
   updateQuantity: (productId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -75,21 +76,31 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const addToCart = useCallback(async (product: Product) => {
+  const addToCart = useCallback(async (product: Product, selectedVariations?: {[key: string]: string}) => {
     try {
-      const existingItem = cartItems.find(item => item.product.id === product.id);
+      // Create a unique key for the cart item based on product ID and variations
+      const variationKey = selectedVariations ? JSON.stringify(selectedVariations) : '';
+      const itemKey = `${product.id}-${variationKey}`;
+      
+      const existingItem = cartItems.find(item => {
+        const itemVariationKey = item.selectedVariations ? JSON.stringify(item.selectedVariations) : '';
+        const existingItemKey = `${item.product.id}-${itemVariationKey}`;
+        return existingItemKey === itemKey;
+      });
       
       let updatedCartItems: CartItem[];
       if (existingItem) {
-        // If item exists, increase quantity
-        updatedCartItems = cartItems.map(item =>
-          item.product.id === product.id
+        // If item exists with same variations, increase quantity
+        updatedCartItems = cartItems.map(item => {
+          const itemVariationKey = item.selectedVariations ? JSON.stringify(item.selectedVariations) : '';
+          const existingItemKey = `${item.product.id}-${itemVariationKey}`;
+          return existingItemKey === itemKey
             ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+            : item;
+        });
       } else {
-        // If item doesn't exist, add new item
-        updatedCartItems = [...cartItems, { product, quantity: 1 }];
+        // If item doesn't exist, add new item with variations
+        updatedCartItems = [...cartItems, { product, quantity: 1, selectedVariations }];
       }
 
       setCartItems(updatedCartItems);

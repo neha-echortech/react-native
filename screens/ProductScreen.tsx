@@ -1,16 +1,17 @@
 import React, { useContext, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    Image,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Animated,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { ProductContext } from '../context/ProductContext';
@@ -26,6 +27,10 @@ const ProductScreen: React.FC = () => {
   const [photos, setPhotos] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [variations, setVariations] = useState<Array<{name: string, options: string[]}>>([]);
+  const [showVariationModal, setShowVariationModal] = useState(false);
+  const [newVariationName, setNewVariationName] = useState('');
+  const [newVariationOptions, setNewVariationOptions] = useState('');
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -72,6 +77,29 @@ const ProductScreen: React.FC = () => {
     }
   };
 
+  const handleAddVariation = () => {
+    if (!newVariationName.trim() || !newVariationOptions.trim()) {
+      Alert.alert('Error', 'Please fill in both variation name and options.');
+      return;
+    }
+
+    const options = newVariationOptions.split(',').map(option => option.trim()).filter(option => option.length > 0);
+    if (options.length === 0) {
+      Alert.alert('Error', 'Please add at least one option.');
+      return;
+    }
+
+    setVariations([...variations, { name: newVariationName.trim(), options }]);
+    setNewVariationName('');
+    setNewVariationOptions('');
+    setShowVariationModal(false);
+  };
+
+  const handleRemoveVariation = (index: number) => {
+    const newVariations = variations.filter((_, i) => i !== index);
+    setVariations(newVariations);
+  };
+
   const handleNext = () => {
     if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
@@ -90,13 +118,14 @@ const ProductScreen: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await createProduct(title.trim(), description.trim(), parseFloat(category === 'Everyday Electronics' ? '29.99' : '19.99'), username!);
+      await createProduct(title.trim(), description.trim(), parseFloat(category === 'Everyday Electronics' ? '29.99' : '19.99'), username!, variations);
       Alert.alert('Success', 'Product created successfully!');
       // Reset form
       setTitle('');
       setDescription('');
       setQuantity(1);
       setPhotos([]);
+      setVariations([]);
       setCurrentStep(1);
     } catch (error) {
       Alert.alert('Error', 'Failed to create product');
@@ -238,6 +267,46 @@ const ProductScreen: React.FC = () => {
             </View>
           </View>
 
+          {/* Variations Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Product Variations</Text>
+              <TouchableOpacity 
+                style={styles.addVariationButton}
+                onPress={() => setShowVariationModal(true)}
+              >
+                <Text style={styles.addVariationButtonText}>+ Add Variation</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {variations.length === 0 ? (
+              <View style={styles.emptyVariations}>
+                <Text style={styles.emptyVariationsText}>
+                  No variations added yet. Add variations like Size, Color, etc.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.variationsList}>
+                {variations.map((variation, index) => (
+                  <View key={index} style={styles.variationItem}>
+                    <View style={styles.variationInfo}>
+                      <Text style={styles.variationName}>{variation.name}</Text>
+                      <Text style={styles.variationOptions}>
+                        {variation.options.join(', ')}
+                      </Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.removeVariationButton}
+                      onPress={() => handleRemoveVariation(index)}
+                    >
+                      <Text style={styles.removeVariationIcon}>×</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
 
 
           {/* Quantity Available Section */}
@@ -289,7 +358,69 @@ const ProductScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      
+      {/* Add Variation Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showVariationModal}
+        onRequestClose={() => setShowVariationModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Variation</Text>
+              <TouchableOpacity
+                onPress={() => setShowVariationModal(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Variation Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="e.g., Size, Color, Material"
+                  placeholderTextColor="#9CA3AF"
+                  value={newVariationName}
+                  onChangeText={setNewVariationName}
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Options (comma separated)</Text>
+                <TextInput
+                  style={[styles.textInput, styles.textArea]}
+                  placeholder="e.g., Small, Medium, Large"
+                  placeholderTextColor="#9CA3AF"
+                  value={newVariationOptions}
+                  onChangeText={setNewVariationOptions}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowVariationModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleAddVariation}
+              >
+                <Text style={styles.submitButtonText}>Add Variation</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -565,7 +696,143 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
   },
-
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addVariationButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  addVariationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  emptyVariations: {
+    backgroundColor: '#F9FAFB',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+  },
+  emptyVariationsText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  variationsList: {
+    gap: 8,
+  },
+  variationItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  variationInfo: {
+    flex: 1,
+  },
+  variationName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  variationOptions: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  removeVariationButton: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeVariationIcon: {
+    fontSize: 16,
+    color: '#DC2626',
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    margin: 20,
+    width: '90%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  closeButton: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 20,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  modalBody: {
+    marginBottom: 20,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  submitButton: {
+    flex: 1,
+    backgroundColor: '#3B82F6',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   footer: {
     position: 'absolute',
     bottom: 0,

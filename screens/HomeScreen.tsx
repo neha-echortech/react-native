@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
-import { Product, ProductContext } from '../context/ProductContext';
+import { Product, ProductContext, ProductVariation } from '../context/ProductContext';
 
 const HomeScreen: React.FC = () => {
   const router = useRouter();
@@ -30,6 +30,15 @@ const HomeScreen: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showVariationModal, setShowVariationModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedVariations, setSelectedVariations] = useState<{[key: string]: string}>({});
+  
+  // Variation form states
+  const [showVariationForm, setShowVariationForm] = useState(false);
+  const [variationName, setVariationName] = useState('');
+  const [variationOptions, setVariationOptions] = useState('');
+  const [productVariations, setProductVariations] = useState<ProductVariation[]>([]);
   const priceInputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -82,10 +91,11 @@ const HomeScreen: React.FC = () => {
 
     setIsCreating(true);
     try {
-      await createProduct(name.trim(), description.trim(), priceValue, username!);
+      await createProduct(name.trim(), description.trim(), priceValue, username!, productVariations);
       setName('');
       setDescription('');
       setPrice('');
+      setProductVariations([]);
       setModalVisible(false);
       Alert.alert('Success', 'Product created successfully!');
     } catch (error) {
@@ -95,13 +105,7 @@ const HomeScreen: React.FC = () => {
     }
   };
 
-  const handleEditProduct = (product: Product) => {
-    setEditingProduct(product);
-    setName(product.name);
-    setDescription(product.description);
-    setPrice(product.price.toString());
-    setModalVisible(true);
-  };
+
 
   const handleUpdateProduct = async () => {
     if (!editingProduct || !name.trim() || !description.trim() || !price.trim()) {
@@ -117,7 +121,7 @@ const HomeScreen: React.FC = () => {
 
     setIsEditing(true);
     try {
-      await updateProduct(editingProduct.id, name.trim(), description.trim(), priceValue);
+      await updateProduct(editingProduct.id, name.trim(), description.trim(), priceValue, productVariations);
       
       // Refresh cart items with updated product data
       await refreshCartItems();
@@ -126,6 +130,7 @@ const HomeScreen: React.FC = () => {
       setName('');
       setDescription('');
       setPrice('');
+      setProductVariations([]);
       setModalVisible(false);
       Alert.alert('Success', 'Product updated successfully!');
     } catch (error) {
@@ -174,12 +179,56 @@ const HomeScreen: React.FC = () => {
     setName('');
     setDescription('');
     setPrice('');
+    setProductVariations([]);
+    setShowVariationForm(false);
+    setVariationName('');
+    setVariationOptions('');
   };
 
   const handleAddToCart = async (product: Product) => {
+    // Check if product has variations
+    if (product.variations && product.variations.length > 0) {
+      setSelectedProduct(product);
+      setSelectedVariations({});
+      setShowVariationModal(true);
+    } else {
+      // No variations, add directly to cart
+      try {
+        await addToCart(product);
+        Alert.alert('Success', 'Product added to cart!');
+      } catch (error) {
+        Alert.alert('Error', 'Failed to add product to cart');
+      }
+    }
+  };
+
+  const handleVariationSelection = (variationName: string, option: string) => {
+    setSelectedVariations(prev => ({
+      ...prev,
+      [variationName]: option
+    }));
+  };
+
+  const handleConfirmVariationSelection = async () => {
+    if (!selectedProduct) return;
+
+    // Check if all variations are selected
+    const hasAllVariations = selectedProduct.variations?.every(variation => 
+      selectedVariations[variation.name]
+    );
+
+    if (!hasAllVariations) {
+      Alert.alert('Error', 'Please select all variations before adding to cart.');
+      return;
+    }
+
     try {
-      await addToCart(product);
+      // Add product with variations to cart
+      await addToCart(selectedProduct, selectedVariations);
       Alert.alert('Success', 'Product added to cart!');
+      setShowVariationModal(false);
+      setSelectedProduct(null);
+      setSelectedVariations({});
     } catch (error) {
       Alert.alert('Error', 'Failed to add product to cart');
     }
@@ -187,6 +236,42 @@ const HomeScreen: React.FC = () => {
 
   const handleCartPress = () => {
     router.push('/cart');
+  };
+
+  const handleAddVariation = () => {
+    if (!variationName.trim() || !variationOptions.trim()) {
+      Alert.alert('Error', 'Please fill in variation name and options');
+      return;
+    }
+
+    const options = variationOptions.split(',').map(option => option.trim()).filter(option => option.length > 0);
+    if (options.length === 0) {
+      Alert.alert('Error', 'Please enter at least one option');
+      return;
+    }
+
+    const newVariation: ProductVariation = {
+      name: variationName.trim(),
+      options: options
+    };
+
+    setProductVariations(prev => [...prev, newVariation]);
+    setVariationName('');
+    setVariationOptions('');
+    setShowVariationForm(false);
+  };
+
+  const handleRemoveVariation = (index: number) => {
+    setProductVariations(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    setName(product.name);
+    setDescription(product.description);
+    setPrice(product.price.toString());
+    setProductVariations(product.variations || []);
+    setModalVisible(true);
   };
 
   return (
@@ -418,6 +503,40 @@ const HomeScreen: React.FC = () => {
                   maxLength={10}
                 />
               </View>
+
+              {/* Variations Section */}
+              <View style={styles.inputGroup}>
+                <View style={styles.variationHeader}>
+                  <Text style={styles.inputLabel}>Variations</Text>
+                  <TouchableOpacity
+                    style={styles.addVariationButton}
+                    onPress={() => setShowVariationForm(true)}
+                  >
+                    <Text style={styles.addVariationButtonText}>+ Add Variation</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                {productVariations.length > 0 && (
+                  <View style={styles.variationsList}>
+                    {productVariations.map((variation, index) => (
+                      <View key={index} style={styles.variationItem}>
+                        <View style={styles.variationInfo}>
+                          <Text style={styles.variationName}>{variation.name}</Text>
+                                                  <Text style={styles.variationOptionsText}>
+                          {variation.options.join(', ')}
+                        </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.removeVariationButton}
+                          onPress={() => handleRemoveVariation(index)}
+                        >
+                          <Text style={styles.removeVariationButtonText}>×</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
             </ScrollView>
 
             <View style={styles.modalFooter}>
@@ -441,7 +560,140 @@ const HomeScreen: React.FC = () => {
         </View>
       </Modal>
 
+      {/* Variation Selection Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showVariationModal}
+        onRequestClose={() => setShowVariationModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Variations</Text>
+              <TouchableOpacity
+                onPress={() => setShowVariationModal(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
 
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              {selectedProduct && (
+                <View>
+                  <Text style={styles.productTitle}>{selectedProduct.name}</Text>
+                  <Text style={styles.productPrice}>${selectedProduct.price.toFixed(2)}</Text>
+                  
+                  {selectedProduct.variations?.map((variation, index) => (
+                    <View key={index} style={styles.variationGroup}>
+                      <Text style={styles.variationLabel}>{variation.name}</Text>
+                      <View style={styles.variationOptionsContainer}>
+                        {variation.options.map((option, optionIndex) => (
+                          <TouchableOpacity
+                            key={optionIndex}
+                            style={[
+                              styles.variationOption,
+                              selectedVariations[variation.name] === option && styles.selectedVariationOption
+                            ]}
+                            onPress={() => handleVariationSelection(variation.name, option)}
+                          >
+                            <Text style={[
+                              styles.variationOptionText,
+                              selectedVariations[variation.name] === option && styles.selectedVariationOptionText
+                            ]}>
+                              {option}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowVariationModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleConfirmVariationSelection}
+              >
+                <Text style={styles.submitButtonText}>Add to Cart</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add Variation Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showVariationForm}
+        onRequestClose={() => setShowVariationForm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Variation</Text>
+              <TouchableOpacity
+                onPress={() => setShowVariationForm(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Variation Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., Size, Color, Material"
+                  placeholderTextColor="#9CA3AF"
+                  value={variationName}
+                  onChangeText={setVariationName}
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Options (comma-separated)</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="e.g., Small, Medium, Large"
+                  placeholderTextColor="#9CA3AF"
+                  value={variationOptions}
+                  onChangeText={setVariationOptions}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowVariationForm(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleAddVariation}
+              >
+                <Text style={styles.submitButtonText}>Add Variation</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -785,7 +1037,110 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
-
+  productTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  productPrice: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#059669',
+  },
+  // Variation styles
+  variationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  addVariationButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  addVariationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  variationsList: {
+    gap: 8,
+  },
+  variationItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  variationInfo: {
+    flex: 1,
+  },
+  variationName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  variationOptionsText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  removeVariationButton: {
+    backgroundColor: '#FEF2F2',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  removeVariationButtonText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  variationGroup: {
+    marginBottom: 20,
+  },
+  variationLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  variationOptionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  variationOption: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  selectedVariationOption: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  variationOptionText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  selectedVariationOptionText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
 });
 
 export default HomeScreen;

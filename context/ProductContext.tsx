@@ -6,11 +6,17 @@ import React, {
     useState
 } from 'react';
 
+export interface ProductVariation {
+  name: string;
+  options: string[];
+}
+
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
+  variations?: ProductVariation[];
   createdAt: string;
   userId: string;
 }
@@ -18,8 +24,8 @@ export interface Product {
 interface ProductContextType {
   products: Product[];
   isLoading: boolean;
-  createProduct: (name: string, description: string, price: number, userId: string) => Promise<void>;
-  updateProduct: (id: string, name: string, description: string, price: number) => Promise<void>;
+  createProduct: (name: string, description: string, price: number, userId: string, variations?: ProductVariation[]) => Promise<void>;
+  updateProduct: (id: string, name: string, description: string, price: number, variations?: ProductVariation[]) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   loadUserProducts: (userId: string) => Promise<void>;
   clearProducts: () => Promise<void>;
@@ -68,13 +74,14 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   }, []);
 
-  const createProduct = useCallback(async (name: string, description: string, price: number, userId: string) => {
+  const createProduct = useCallback(async (name: string, description: string, price: number, userId: string, variations?: ProductVariation[]) => {
     try {
       const newProduct: Product = {
         id: Date.now().toString(),
         name,
         description,
         price,
+        variations,
         createdAt: new Date().toISOString(),
         userId,
       };
@@ -96,7 +103,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   }, []);
 
-  const updateProduct = useCallback(async (id: string, name: string, description: string, price: number) => {
+  const updateProduct = useCallback(async (id: string, name: string, description: string, price: number, variations?: ProductVariation[]) => {
     try {
       // Get existing products
       const stored = await AsyncStorage.getItem(PRODUCTS_STORAGE_KEY);
@@ -105,7 +112,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       // Find and update the product
       const updatedProducts = allProducts.map(product => 
         product.id === id 
-          ? { ...product, name, description, price }
+          ? { ...product, name, description, price, variations }
           : product
       );
       
