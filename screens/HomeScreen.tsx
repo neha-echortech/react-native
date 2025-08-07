@@ -20,7 +20,7 @@ const HomeScreen: React.FC = () => {
   const router = useRouter();
   const { username, logout } = useContext(AuthContext);
   const { products, isLoading, createProduct, updateProduct, deleteProduct, loadUserProducts, clearProducts } = useContext(ProductContext);
-  const { addToCart, getCartItemCount, refreshCartItems } = useContext(CartContext);
+  const { addToCart, getCartItemCount, refreshCartItems, showAddToCartSuccess, hideAddToCartSuccess, updateQuantity, cartItems, loadCart } = useContext(CartContext);
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -46,6 +46,7 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     if (username) {
       loadUserProducts(username);
+      loadCart(username);
     } else {
       clearProducts();
     }
@@ -55,7 +56,18 @@ const HomeScreen: React.FC = () => {
       duration: 600,
       useNativeDriver: true,
     }).start();
-  }, [username, loadUserProducts, clearProducts]);
+  }, [username, loadUserProducts, loadCart, clearProducts]);
+
+  // Auto-hide success banner after 3 seconds
+  useEffect(() => {
+    if (showAddToCartSuccess) {
+      const timer = setTimeout(() => {
+        hideAddToCartSuccess();
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showAddToCartSuccess, hideAddToCartSuccess]);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -453,12 +465,37 @@ const HomeScreen: React.FC = () => {
                       >
                         <Text style={styles.actionButtonText}>Edit</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.actionButton, styles.addToCartButton]}
-                        onPress={() => handleAddToCart(item)}
-                      >
-                        <Text style={styles.addToCartButtonText}>Add to Cart</Text>
-                      </TouchableOpacity>
+                      {(() => {
+                        const cartItem = cartItems.find(cartItem => cartItem.product.id === item.id);
+                        if (cartItem) {
+                          return (
+                            <View style={styles.quantityContainer}>
+                              <TouchableOpacity 
+                                style={styles.quantityButton}
+                                onPress={() => updateQuantity(item.id, cartItem.quantity - 1)}
+                              >
+                                <Text style={styles.quantityButtonText}>-</Text>
+                              </TouchableOpacity>
+                              <Text style={styles.quantityText}>{cartItem.quantity}</Text>
+                              <TouchableOpacity 
+                                style={styles.quantityButton}
+                                onPress={() => updateQuantity(item.id, cartItem.quantity + 1)}
+                              >
+                                <Text style={styles.quantityButtonText}>+</Text>
+                              </TouchableOpacity>
+                            </View>
+                          );
+                        } else {
+                          return (
+                            <TouchableOpacity 
+                              style={[styles.actionButton, styles.addToCartButton]}
+                              onPress={() => handleAddToCart(item)}
+                            >
+                              <Text style={styles.addToCartButtonText}>Add to Cart</Text>
+                            </TouchableOpacity>
+                          );
+                        }
+                      })()}
                       <TouchableOpacity 
                         style={[styles.actionButton, styles.deleteButton]}
                         onPress={() => handleDeleteProduct(item)}
@@ -766,6 +803,33 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Add to Cart Success Banner */}
+      {showAddToCartSuccess && (
+        <Animated.View 
+          style={styles.successBanner}
+          entering={Animated.timing(new Animated.Value(0), {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          })}
+        >
+          <View style={styles.successBannerContent}>
+            <Text style={styles.successBannerText}>
+              {getCartItemCount()} Item{getCartItemCount() !== 1 ? 's' : ''} added
+            </Text>
+            <TouchableOpacity 
+              style={styles.viewCartButton}
+              onPress={() => {
+                hideAddToCartSuccess();
+                router.push('/cart');
+              }}
+            >
+              <Text style={styles.viewCartButtonText}>View Cart ></Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      )}
     </View>
   );
 };
@@ -1240,6 +1304,74 @@ const styles = StyleSheet.create({
   selectedVariationOptionText: {
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  successBanner: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  successBannerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  successBannerText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  viewCartButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  viewCartButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#10B981',
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  quantityButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 2,
+  },
+  quantityButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#10B981',
+  },
+  quantityText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginHorizontal: 8,
+    minWidth: 20,
+    textAlign: 'center',
   },
 });
 

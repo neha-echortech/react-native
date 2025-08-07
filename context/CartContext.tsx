@@ -16,6 +16,7 @@ export interface CartItem {
 interface CartContextType {
   cartItems: CartItem[];
   isLoading: boolean;
+  showAddToCartSuccess: boolean;
   addToCart: (product: Product, selectedVariations?: {[key: string]: string}) => Promise<void>;
   removeFromCart: (productId: string) => Promise<void>;
   updateQuantity: (productId: string, quantity: number) => Promise<void>;
@@ -24,11 +25,13 @@ interface CartContextType {
   refreshCartItems: () => Promise<void>;
   getCartTotal: () => number;
   getCartItemCount: () => number;
+  hideAddToCartSuccess: () => void;
 }
 
 export const CartContext = createContext<CartContextType>({
   cartItems: [],
   isLoading: true,
+  showAddToCartSuccess: false,
   addToCart: async () => {},
   removeFromCart: async () => {},
   updateQuantity: async () => {},
@@ -37,6 +40,7 @@ export const CartContext = createContext<CartContextType>({
   refreshCartItems: async () => {},
   getCartTotal: () => 0,
   getCartItemCount: () => 0,
+  hideAddToCartSuccess: () => {},
 });
 
 interface CartProviderProps {
@@ -47,6 +51,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showAddToCartSuccess, setShowAddToCartSuccess] = useState<boolean>(false);
 
   const CART_STORAGE_KEY = '@user_cart';
 
@@ -104,6 +109,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       }
 
       setCartItems(updatedCartItems);
+      setShowAddToCartSuccess(true);
 
       // Save to AsyncStorage
       const stored = await AsyncStorage.getItem(CART_STORAGE_KEY);
@@ -239,11 +245,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
   }, [cartItems, currentUserId]);
 
+  const hideAddToCartSuccess = useCallback(() => {
+    setShowAddToCartSuccess(false);
+  }, []);
+
   return (
     <CartContext.Provider
       value={{
         cartItems,
         isLoading,
+        showAddToCartSuccess,
         addToCart,
         removeFromCart,
         updateQuantity,
@@ -252,6 +263,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         refreshCartItems,
         getCartTotal,
         getCartItemCount,
+        hideAddToCartSuccess,
       }}
     >
       {children}
