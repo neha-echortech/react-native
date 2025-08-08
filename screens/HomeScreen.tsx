@@ -465,14 +465,6 @@ const HomeScreen: React.FC = () => {
                   🛒 {getCartItemCount()}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.profileButton}
-                onPress={() => router.push('/profile')}
-              >
-                <Text style={styles.profileButtonText}>
-                  👤
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
           
@@ -1057,7 +1049,7 @@ const HomeScreen: React.FC = () => {
           style={[styles.navItem, styles.navItemActive]}
           onPress={() => {}}
         >
-          <Text style={styles.navIcon}>🏠</Text>
+          <Text style={styles.navIcon}>🏘️</Text>
           <Text style={styles.navLabel}>Home</Text>
         </TouchableOpacity>
         
