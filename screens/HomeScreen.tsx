@@ -466,14 +466,6 @@ const HomeScreen: React.FC = () => {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.orderButton}
-                onPress={() => router.push('/order')}
-              >
-                <Text style={styles.orderButtonText}>
-                  📋 Orders
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
                 style={styles.profileButton}
                 onPress={() => router.push('/profile')}
               >
@@ -1058,6 +1050,41 @@ const HomeScreen: React.FC = () => {
           </View>
         </Animated.View>
       )}
+
+      {/* Bottom Navigation Bar */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity 
+          style={[styles.navItem, styles.navItemActive]}
+          onPress={() => {}}
+        >
+          <Text style={styles.navIcon}>🏠</Text>
+          <Text style={styles.navLabel}>Home</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.navItem}
+          onPress={() => router.push('/order')}
+        >
+          <Text style={styles.navIcon}>📋</Text>
+          <Text style={styles.navLabel}>Orders</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.navItem}
+          onPress={() => router.push('/cart')}
+        >
+          <Text style={styles.navIcon}>🛒</Text>
+          <Text style={styles.navLabel}>Cart</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.navItem}
+          onPress={() => router.push('/profile')}
+        >
+          <Text style={styles.navIcon}>👤</Text>
+          <Text style={styles.navLabel}>Profile</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -1114,17 +1141,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  orderButton: {
-    backgroundColor: '#8B5CF6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  orderButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
+
   profileButton: {
     backgroundColor: '#10B981',
     paddingHorizontal: 12,
@@ -1861,6 +1878,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#FFFFFF',
     color: '#111827',
+  },
+  // Bottom Navigation Styles
+  bottomNav: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingBottom: 20,
+    paddingTop: 8,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  navItemActive: {
+    backgroundColor: '#F0F9FF',
+  },
+  navIcon: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  navLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
 });
 
