@@ -15,12 +15,14 @@ import {
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import { Product, ProductContext, ProductVariation } from '../context/ProductContext';
+import { ReviewContext } from '../context/ReviewContext';
 
 const HomeScreen: React.FC = () => {
   const router = useRouter();
-  const { username, logout } = useContext(AuthContext);
+  const { username } = useContext(AuthContext);
   const { products, isLoading, createProduct, updateProduct, deleteProduct, loadUserProducts, clearProducts } = useContext(ProductContext);
   const { addToCart, getCartItemCount, refreshCartItems, showAddToCartSuccess, hideAddToCartSuccess, updateQuantity, cartItems, loadCart } = useContext(CartContext);
+  const { getProductAverageRating, getProductReviewCount } = useContext(ReviewContext);
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -69,35 +71,7 @@ const HomeScreen: React.FC = () => {
     }
   }, [showAddToCartSuccess, hideAddToCartSuccess]);
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('Logging out...');
-              await logout();
-              console.log('Logout successful');
-              // Force navigation to login screen
-              router.replace('/login');
-            } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
+
 
   const handleCreateProduct = async () => {
     if (!name.trim() || !description.trim() || !price.trim()) {
@@ -304,6 +278,18 @@ const HomeScreen: React.FC = () => {
     setProductVariations(prev => prev.filter((_, i) => i !== index));
   };
 
+  const renderStars = (rating: number, size: number = 12) => {
+    return (
+      <View style={styles.starsContainer}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Text key={star} style={[styles.star, { fontSize: size }]}>
+            {star <= rating ? '⭐' : '☆'}
+          </Text>
+        ))}
+      </View>
+    );
+  };
+
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setName(product.name);
@@ -342,11 +328,19 @@ const HomeScreen: React.FC = () => {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.logoutButton}
-                onPress={handleLogout}
+                style={styles.orderButton}
+                onPress={() => router.push('/order')}
               >
-                <Text style={styles.logoutButtonText}>
-                  Sign Out
+                <Text style={styles.orderButtonText}>
+                  📋 Orders
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.profileButton}
+                onPress={() => router.push('/profile')}
+              >
+                <Text style={styles.profileButtonText}>
+                  👤 Profile
                 </Text>
               </TouchableOpacity>
             </View>
@@ -426,6 +420,12 @@ const HomeScreen: React.FC = () => {
                       <Text style={styles.productDescription}>
                         {item.description}
                       </Text>
+                      <View style={styles.ratingContainer}>
+                        {renderStars(getProductAverageRating(item.id))}
+                        <Text style={styles.reviewCount}>
+                          ({getProductReviewCount(item.id)} reviews)
+                        </Text>
+                      </View>
                     </View>
                     <View style={styles.priceSection}>
                       {item.discountPercentage ? (
@@ -466,26 +466,13 @@ const HomeScreen: React.FC = () => {
                         <Text style={styles.actionButtonText}>Edit</Text>
                       </TouchableOpacity>
                       {(() => {
-                        const cartItem = cartItems.find(cartItem => cartItem.product.id === item.id);
-                        if (cartItem) {
-                          return (
-                            <View style={styles.quantityContainer}>
-                              <TouchableOpacity 
-                                style={styles.quantityButton}
-                                onPress={() => updateQuantity(item.id, cartItem.quantity - 1)}
-                              >
-                                <Text style={styles.quantityButtonText}>-</Text>
-                              </TouchableOpacity>
-                              <Text style={styles.quantityText}>{cartItem.quantity}</Text>
-                              <TouchableOpacity 
-                                style={styles.quantityButton}
-                                onPress={() => updateQuantity(item.id, cartItem.quantity + 1)}
-                              >
-                                <Text style={styles.quantityButtonText}>+</Text>
-                              </TouchableOpacity>
-                            </View>
-                          );
-                        } else {
+                        // Check if this product has variations
+                        const hasVariations = item.variations && item.variations.length > 0;
+                        
+                        if (hasVariations) {
+                          // For products with variations, we need to show "Add to Cart" button
+                          // because we can't know which specific variation the user wants to modify
+                          // The variation selection modal will handle the logic
                           return (
                             <TouchableOpacity 
                               style={[styles.actionButton, styles.addToCartButton]}
@@ -494,6 +481,37 @@ const HomeScreen: React.FC = () => {
                               <Text style={styles.addToCartButtonText}>Add to Cart</Text>
                             </TouchableOpacity>
                           );
+                        } else {
+                          // For products without variations, check if it's already in cart
+                          const cartItem = cartItems.find(cartItem => cartItem.product.id === item.id);
+                          if (cartItem) {
+                            return (
+                              <View style={styles.quantityContainer}>
+                                <TouchableOpacity 
+                                  style={styles.quantityButton}
+                                  onPress={() => updateQuantity(item.id, cartItem.quantity - 1)}
+                                >
+                                  <Text style={styles.quantityButtonText}>-</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.quantityText}>{cartItem.quantity}</Text>
+                                <TouchableOpacity 
+                                  style={styles.quantityButton}
+                                  onPress={() => updateQuantity(item.id, cartItem.quantity + 1)}
+                                >
+                                  <Text style={styles.quantityButtonText}>+</Text>
+                                </TouchableOpacity>
+                              </View>
+                            );
+                          } else {
+                            return (
+                              <TouchableOpacity 
+                                style={[styles.actionButton, styles.addToCartButton]}
+                                onPress={() => handleAddToCart(item)}
+                              >
+                                <Text style={styles.addToCartButtonText}>Add to Cart</Text>
+                              </TouchableOpacity>
+                            );
+                          }
                         }
                       })()}
                       <TouchableOpacity 
@@ -886,14 +904,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  logoutButton: {
-    backgroundColor: '#F3F4F6',
+  orderButton: {
+    backgroundColor: '#8B5CF6',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
-  logoutButtonText: {
-    color: '#374151',
+  orderButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  profileButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  profileButtonText: {
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -985,6 +1014,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     lineHeight: 20,
+    marginBottom: 8,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    gap: 1,
+  },
+  star: {
+    color: '#F59E0B',
+  },
+  reviewCount: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   priceSection: {
     alignItems: 'flex-end',

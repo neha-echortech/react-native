@@ -1,17 +1,17 @@
 import React, { useContext, useRef, useState } from 'react';
 import {
-  Alert,
-  Animated,
-  Image,
-  Modal,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Animated,
+    Image,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { ProductContext } from '../context/ProductContext';

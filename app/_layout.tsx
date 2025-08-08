@@ -7,7 +7,9 @@ import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { CartProvider } from '../context/CartContext';
+import { OrderProvider } from '../context/OrderContext';
 import { ProductProvider } from '../context/ProductContext';
+import { ReviewProvider } from '../context/ReviewContext';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -33,6 +35,9 @@ function RootLayoutNav() {
             <Stack.Screen name="product" />
             <Stack.Screen name="cart" />
             <Stack.Screen name="checkout" />
+            <Stack.Screen name="order" />
+            <Stack.Screen name="profile" />
+            <Stack.Screen name="review" />
           </>
         ) : (
           <Stack.Screen name="login" />
@@ -57,7 +62,11 @@ export default function RootLayout() {
     <AuthProvider>
       <ProductProvider>
         <CartProvider>
-          <RootLayoutNav />
+          <OrderProvider>
+            <ReviewProvider>
+              <RootLayoutNav />
+            </ReviewProvider>
+          </OrderProvider>
         </CartProvider>
       </ProductProvider>
     </AuthProvider>

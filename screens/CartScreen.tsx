@@ -236,11 +236,17 @@ const CartScreen: React.FC = () => {
             </View>
           ) : (
             <View style={styles.cartContainer}>
-              {cartItems.map((item, index) => (
-                <View key={item.product.id} style={styles.cartItemWrapper}>
-                  {renderCartItem({ item, index })}
-                </View>
-              ))}
+              {cartItems.map((item, index) => {
+                // Create a unique key that includes product ID and variations
+                const variationKey = item.selectedVariations ? JSON.stringify(item.selectedVariations) : '';
+                const uniqueKey = `${item.product.id}-${variationKey}`;
+                
+                return (
+                  <View key={uniqueKey} style={styles.cartItemWrapper}>
+                    {renderCartItem({ item, index })}
+                  </View>
+                );
+              })}
             </View>
           )}
         </View>

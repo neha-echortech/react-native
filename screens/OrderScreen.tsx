@@ -1,14 +1,14 @@
 import { useRouter } from 'expo-router';
 import React, { useContext, useEffect, useRef } from 'react';
 import {
-  Alert,
-  Animated,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Alert,
+    Animated,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { Order, OrderContext } from '../context/OrderContext';
@@ -63,9 +63,19 @@ const OrderScreen: React.FC = () => {
   };
 
   const handleUpdateStatus = async (order: Order) => {
+    // Don't allow status updates if order is already delivered
+    if (order.status === 'Delivered') {
+      Alert.alert(
+        'Order Completed',
+        'This order has been delivered and cannot be updated further.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     const statusOptions = ['Pending', 'Processing', 'Shipped', 'Delivered'];
     const currentIndex = statusOptions.indexOf(order.status);
-    const nextStatus = statusOptions[(currentIndex + 1) % statusOptions.length] as Order['status'];
+    const nextStatus = statusOptions[currentIndex + 1] as Order['status'];
 
     Alert.alert(
       'Update Order Status',
@@ -151,12 +161,18 @@ const OrderScreen: React.FC = () => {
         <Text style={styles.orderTotal}>
           Total: ${item.total.toFixed(2)}
         </Text>
-        <TouchableOpacity 
-          style={styles.updateButton}
-          onPress={() => handleUpdateStatus(item)}
-        >
-          <Text style={styles.updateButtonText}>Update Status</Text>
-        </TouchableOpacity>
+        {item.status === 'Delivered' ? (
+          <View style={styles.completedButton}>
+            <Text style={styles.completedButtonText}>✓ Completed</Text>
+          </View>
+        ) : (
+          <TouchableOpacity 
+            style={styles.updateButton}
+            onPress={() => handleUpdateStatus(item)}
+          >
+            <Text style={styles.updateButtonText}>Update Status</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </Animated.View>
   );
@@ -377,6 +393,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   updateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  completedButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  completedButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',

@@ -1,22 +1,24 @@
 import { useRouter } from 'expo-router';
 import React, { useContext, useEffect, useRef } from 'react';
 import {
-    Alert,
-    Animated,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Animated,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext, CartItem } from '../context/CartContext';
+import { OrderContext } from '../context/OrderContext';
 
 const CheckoutScreen: React.FC = () => {
   const router = useRouter();
   const { username } = useContext(AuthContext);
   const { cartItems, getCartTotal, clearCart } = useContext(CartContext);
+  const { createOrder } = useContext(OrderContext);
   
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -44,7 +46,7 @@ const CheckoutScreen: React.FC = () => {
 
 
 
-  const handlePayNow = () => {
+  const handlePayNow = async () => {
     Alert.alert(
       'Confirm Payment',
       `Total: $${total.toFixed(2)}\n\nProceed with payment?`,
@@ -55,10 +57,16 @@ const CheckoutScreen: React.FC = () => {
         },
         {
           text: 'Pay Now',
-          onPress: () => {
-            Alert.alert('Success', 'Payment processed successfully! Your order has been placed.');
-            clearCart();
-            router.back();
+          onPress: async () => {
+            try {
+              // Create order
+              await createOrder(username!, cartItems, total);
+              Alert.alert('Success', 'Payment processed successfully! Your order has been placed.');
+              clearCart();
+              router.back();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to create order. Please try again.');
+            }
           },
         },
       ],
@@ -171,7 +179,10 @@ const CheckoutScreen: React.FC = () => {
               <Text style={styles.costValue}>{shipping > 0 ? `$${shipping.toFixed(2)}` : 'Free'}</Text>
             </View>
             
-
+            <View style={styles.costRow}>
+              <Text style={styles.costLabel}>Estimated taxes</Text>
+              <Text style={styles.costValue}>${estimatedTaxes.toFixed(2)}</Text>
+            </View>
             
             <View style={styles.orderTotalSeparator} />
             
