@@ -478,7 +478,7 @@ const HomeScreen: React.FC = () => {
                 onPress={() => router.push('/profile')}
               >
                 <Text style={styles.profileButtonText}>
-                  👤 Profile
+                  👤
                 </Text>
               </TouchableOpacity>
             </View>
@@ -658,7 +658,7 @@ const HomeScreen: React.FC = () => {
                         disabled={isDeleting}
                       >
                         <Text style={styles.deleteButtonText}>
-                          {isDeleting ? 'Deleting...' : 'Delete'}
+                          {isDeleting ? '...' : '×'}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -1127,13 +1127,15 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     backgroundColor: '#10B981',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
+    minWidth: 40,
+    alignItems: 'center',
   },
   profileButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   statsRow: {
@@ -1314,9 +1316,12 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: '#FEF2F2',
+    paddingHorizontal: 8,
+    minWidth: 32,
+    alignItems: 'center',
   },
   deleteButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#DC2626',
     fontWeight: '600',
   },
